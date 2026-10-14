@@ -1,0 +1,142 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * OPTIONAL - licensed heading font.
+ *
+ * The page this project is modelled on sets its headings in "Biennale SemiBold", a commercial typeface
+ * that is intentionally NOT bundled here. If you hold a licence for it, place the file at
+ * public/fonts/BiennaleSemiBold.otf and uncomment the block below. Without it, headings render in
+ * Geist, which is the same fallback the original font stack declares.
+ *
+ * @font-face {
+ *   font-family: Biennale;
+ *   src: url(/fonts/BiennaleSemiBold.otf) format("opentype");
+ *   font-weight: 600;
+ *   font-style: normal;
+ *   font-display: swap;
+ * }
+ */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222 20% 11%;
+    --card: 0 0% 100%;
+    --card-foreground: 222 20% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 20% 11%;
+    --primary: 221 83% 53%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 222 20% 11%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 221 83% 53%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 36%;
+    --success-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 221 83% 53%;
+    --radius: 0.75rem;
+
+    font-family: "Geist Variable", Geist, sans-serif;
+  }
+
+  * {
+    @apply border-border;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-family: Inter, sans-serif;
+    overflow-anchor: none;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: Biennale, "Geist Variable", Geist, sans-serif;
+  }
+
+  /* Forces 16px everywhere (prevents iOS zoom-on-focus). Overrides the `sm:text-sm` utility on purpose. */
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+    touch-action: manipulation;
+  }
+
+  button,
+  a {
+    touch-action: manipulation;
+  }
+}
+
+/* Page-load cover fade, submit success flash and the animated check mark. */
+@keyframes fadeOutWhite {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes flashIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes drawCheck {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* "Submitting your application..." overlay. */
+@keyframes fadeInOverlay {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bounceDot {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translateY(-8px);
+    opacity: 1;
+  }
+}

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+  <title>Leads &amp; Funnel Operating Cockpit | Fynex Network</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/dashboard.css" />
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Top Operations Bar -->
+  <header class="bg-white border-b border-[#E5EDF5] sticky top-0 z-30">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="w-8 h-8 rounded-lg bg-[#061B31] flex items-center justify-center text-white font-bold text-sm tracking-tight shadow-sm shrink-0">
+          FN
+        </div>
+        <div class="flex items-center gap-2 truncate">
+          <h1 class="text-[#061B31] font-semibold text-sm sm:text-base tracking-tight truncate">Fynex Lead Ops</h1>
+          <span class="hidden sm:inline-block text-xs text-[#8898AA]">/</span>
+          <span class="hidden sm:inline-block text-xs font-medium text-[#64748D]">Applications &amp; Attribution Cockpit</span>
+        </div>
+        <div class="flex items-center gap-1.5 ml-1 sm:ml-2 px-2 py-0.5 rounded-full bg-[#EDF9F3] border border-[#C6F0DC] shrink-0">
+          <span id="liveDot" class="pulse-dot"></span>
+          <span id="liveStatusText" class="text-[11px] font-semibold text-[#00875A] uppercase tracking-wider">Live</span>
+        </div>
+        <div id="integrationBadges" class="hidden md:flex items-center gap-1.5 ml-1"></div>
+      </div>
+
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+        <a href="/apply" target="_blank" class="text-xs font-medium text-[#64748D] hover:text-[#061B31] px-2.5 py-1.5 rounded-md hover:bg-slate-50 border border-transparent hover:border-[#E5EDF5] transition flex items-center gap-1">
+          <span>Form</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+        </a>
+        <button id="exportCsvBtn" class="text-xs font-medium text-[#061B31] bg-white hover:bg-slate-50 px-2.5 py-1.5 rounded-md border border-[#D0DDEC] shadow-2xs transition flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5 text-[#64748D]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+          <span class="hidden sm:inline">Export CSV</span>
+        </button>
+        <button id="resetDataBtn" class="text-xs font-medium text-[#DF1B41] bg-[#FEF2F4] hover:bg-[#FCE4E8] px-2.5 py-1.5 rounded-md border border-[#FAC5CF] transition flex items-center gap-1" title="Clear all leads and events">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+          <span class="hidden sm:inline">Reset</span>
+        </button>
+        <button id="refreshBtn" class="text-xs font-semibold text-white bg-[#2563EB] hover:bg-[#1D4ED8] px-3 py-1.5 rounded-md shadow-xs transition flex items-center gap-1.5">
+          <svg id="refreshIcon" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          <span>Refresh</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Sticky Filter & Search Control Bar -->
+  <section class="bg-white/95 backdrop-blur-md border-b border-[#E5EDF5] sticky top-14 z-20">
+    <div class="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+      <!-- Date Range Segmented Bar -->
+      <div class="flex items-center gap-2 overflow-x-auto scroll-smooth-x pb-1 lg:pb-0">
+        <div class="inline-flex p-1 rounded-lg bg-[#F1F5F9] border border-[#E2E8F0] shrink-0" id="dateFilterGroup">
+          <button data-range="today" class="stripe-pill inactive">Today</button>
+          <button data-range="yesterday" class="stripe-pill inactive">Yesterday</button>
+          <button data-range="7d" class="stripe-pill inactive">Last 7D</button>
+          <button data-range="30d" class="stripe-pill inactive">Last 30D</button>
+          <button data-range="month" class="stripe-pill inactive">This Month</button>
+          <button data-range="all" class="stripe-pill active">All Time</button>
+        </div>
+      </div>
+
+      <!-- Status Filter + Search -->
+      <div class="flex flex-wrap items-center gap-2">
+        <div class="inline-flex p-1 rounded-lg bg-[#F1F5F9] border border-[#E2E8F0] text-xs" id="statusFilterGroup">
+          <button data-status="ALL" class="stripe-pill active">All</button>
+          <button data-status="NEW" class="stripe-pill inactive">New</button>
+          <button data-status="CONTACTED" class="stripe-pill inactive">Contacted</button>
+          <button data-status="QUALIFIED" class="stripe-pill inactive">Qualified</button>
+          <button data-status="ARCHIVED" class="stripe-pill inactive">Archived</button>
+        </div>
+
+        <div class="relative flex-1 sm:w-72 min-w-[200px]">
+          <svg class="w-4 h-4 text-[#8898AA] absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input id="globalSearch" type="text" placeholder="Search name, email, phone, state, campaign..." class="w-full pl-9 pr-7 py-1.5 bg-white border border-[#D0DDEC] rounded-lg text-xs text-[#061B31] placeholder-[#8898AA] focus:outline-none focus:border-[#2563EB]" />
+          <button id="clearSearchBtn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-[#8898AA] hover:text-[#061B31] text-xs font-bold">&times;</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Main Content -->
+  <main class="max-w-[1440px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 flex-1">
+
+    <!-- Row 1: Hero KPI + 4 Funnel Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+      <div class="lg:col-span-4 stripe-card p-5 flex flex-col justify-between relative overflow-hidden bg-gradient-to-br from-white via-white to-[#F4F7FF]">
+        <div>
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold uppercase tracking-wider text-[#64748D]">Total Applications</span>
+            <span id="activeRangeBadge" class="text-[11px] font-medium px-2 py-0.5 rounded bg-[#EEF2FF] text-[#2563EB]">All Time</span>
+          </div>
+          <div class="mt-3 flex items-baseline gap-2.5">
+            <span id="kpiTotalLeads" class="text-3xl sm:text-4xl font-bold text-[#061B31] tabular-numbers tracking-tight">0</span>
+            <span id="kpiEmployedRate" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#EDF9F3] text-[#00875A] tabular-numbers">0% employed</span>
+          </div>
+          <p id="kpiHeroSubtext" class="text-xs text-[#64748D] mt-1.5">0 high-credit (700+) · 0 with referral code</p>
+        </div>
+
+        <div class="mt-5 pt-4 border-t border-[#E5EDF5] grid grid-cols-3 gap-2 text-center">
+          <div>
+            <div class="text-[11px] text-[#8898AA] font-medium">WhatsApp</div>
+            <div id="kpiWhatsappCount" class="text-xs font-semibold text-[#061B31] tabular-numbers mt-0.5">0</div>
+          </div>
+          <div class="border-x border-[#E5EDF5]">
+            <div class="text-[11px] text-[#8898AA] font-medium">Email</div>
+            <div id="kpiEmailCount" class="text-xs font-semibold text-[#061B31] tabular-numbers mt-0.5">0</div>
+          </div>
+          <div>
+            <div class="text-[11px] text-[#8898AA] font-medium">Telegram</div>
+            <div id="kpiTelegramCount" class="text-xs font-semibold text-[#061B31] tabular-numbers mt-0.5">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lg:col-span-8 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+        <div class="stripe-card p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs font-medium text-[#64748D]">
+              <span>1. Visitors</span>
+              <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+            </div>
+            <div id="funnelVisitors" class="text-2xl font-bold text-[#061B31] tabular-numbers mt-2">0</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-[#F1F5F9]">
+            <div id="funnelStartedSub" class="text-[11px] text-[#64748D] tabular-numbers">0 started form</div>
+          </div>
+        </div>
+
+        <div class="stripe-card p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs font-medium text-[#64748D]">
+              <span>2. Credit 700+</span>
+              <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+            </div>
+            <div id="funnelHighCredit" class="text-2xl font-bold text-[#061B31] tabular-numbers mt-2">0</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-[#F1F5F9] flex items-center justify-between">
+            <span class="text-[11px] text-[#8898AA]">620–699 Tier</span>
+            <span id="funnelMidCredit" class="text-xs font-semibold text-[#2563EB] tabular-numbers">0</span>
+          </div>
+        </div>
+
+        <div class="stripe-card p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs font-medium text-[#64748D]">
+              <span>3. Qualified</span>
+              <span class="w-2 h-2 rounded-full bg-[#00875A]"></span>
+            </div>
+            <div id="funnelQualified" class="text-2xl font-bold text-[#00875A] tabular-numbers mt-2">0</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-[#F1F5F9] flex items-center justify-between">
+            <span class="text-[11px] text-[#8898AA]">Contacted</span>
+            <span id="funnelContacted" class="text-xs font-semibold text-[#00875A] tabular-numbers">0</span>
+          </div>
+        </div>
+
+        <div class="stripe-card p-4 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between text-xs font-medium text-[#64748D]">
+              <span>4. CAPI Fired</span>
+              <span class="w-2 h-2 rounded-full bg-[#6366F1]"></span>
+            </div>
+            <div id="funnelCapiSent" class="text-2xl font-bold text-[#061B31] tabular-numbers mt-2">0</div>
+          </div>
+          <div class="mt-3 pt-2.5 border-t border-[#F1F5F9] flex items-center justify-between">
+            <span class="text-[11px] text-[#8898AA]">Abandons</span>
+            <span id="funnelAbandons" class="text-xs font-semibold text-[#DF1B41] tabular-numbers">0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Row 2: Applications Master Table -->
+    <div class="stripe-card overflow-hidden">
+      <div class="p-4 sm:px-6 border-b border-[#E5EDF5] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold text-[#061B31]">Submitted Applications</h2>
+          <span id="tableCountBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#061B31] tabular-numbers">0</span>
+        </div>
+        <div class="text-xs text-[#64748D]">
+          Click any phone, email, or ID pill to copy · Update lead status inline
+        </div>
+      </div>
+
+      <div class="scroll-smooth-x max-h-[600px]">
+        <table class="w-full text-left border-collapse stripe-table">
+          <thead>
+            <tr>
+              <th class="sticky-col">Applicant</th>
+              <th>Contact &amp; Channel</th>
+              <th>Location &amp; Device</th>
+              <th>Employment &amp; Credit</th>
+              <th>Campaign &amp; Referral</th>
+              <th>CAPI &amp; Speed</th>
+              <th>Status</th>
+              <th>Submitted</th>
+              <th class="text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="leadsTableBody">
+            <tr>
+              <td colspan="9" class="text-center py-12 text-xs text-[#8898AA]">Loading applications...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Row 3: Live Visitor & CAPI Funnel Feed -->
+    <div class="stripe-card overflow-hidden">
+      <div class="p-4 sm:px-6 border-b border-[#E5EDF5] flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <h2 class="text-sm font-semibold text-[#061B31]">Recent Funnel &amp; CAPI Telemetry</h2>
+          <span id="eventsCountBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#F1F5F9] text-[#061B31] tabular-numbers">0</span>
+        </div>
+        <span class="text-xs text-[#8898AA]">Real-time visits, form steps, abandons &amp; server CAPI dispatches</span>
+      </div>
+      <div class="scroll-smooth-x max-h-[340px]">
+        <table class="w-full text-left border-collapse stripe-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Event</th>
+              <th>Visitor</th>
+              <th>Location &amp; Device</th>
+              <th>Details / Attribution</th>
+            </tr>
+          </thead>
+          <tbody id="eventsTableBody">
+            <tr>
+              <td colspan="5" class="text-center py-8 text-xs text-[#8898AA]">No events recorded yet.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Applicant Detail Modal -->
+  <div id="leadModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-xl border border-[#E5EDF5] shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="px-6 py-4 border-b border-[#E5EDF5] flex items-center justify-between sticky top-0 bg-white z-10">
+        <div>
+          <h3 id="modalTitle" class="text-base font-bold text-[#061B31]">Application Details</h3>
+          <p id="modalSubtitle" class="text-xs text-[#64748D] tabular-numbers"></p>
+        </div>
+        <button id="closeModalBtn" class="text-[#64748D] hover:text-[#061B31] text-xl font-bold px-2">&times;</button>
+      </div>
+      <div id="modalBody" class="p-6 space-y-4 text-xs"></div>
+    </div>
+  </div>
+
+  <script src="/dashboard.js"></script>
+</body>
+</html>
