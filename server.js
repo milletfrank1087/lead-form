@@ -262,7 +262,11 @@ app.get('/api/tracking/config', (req, res) => {
 app.post('/api/track', async (req, res) => {
   try {
     const { visitor, clientInfo } = resolveVisitor(req);
-    const { eventName, eventId, customData = {}, tracking = {} } = req.body || {};
+    const body = req.body || {};
+    const eventName = body.eventName || body.event;
+    const eventId = body.eventId;
+    const customData = body.customData || body.data || {};
+    const tracking = body.tracking || body.cookies || {};
     if (!eventName) {
       return res.status(400).json({ error: 'eventName is required' });
     }
@@ -270,6 +274,7 @@ app.post('/api/track', async (req, res) => {
     const effectiveEventId =
       eventId || tracking.eventId || `${eventName}_${Date.now()}`;
     const sourceUrl =
+      body.sourceUrl ||
       tracking.sourceUrl ||
       req.get('Referer') ||
       `${req.protocol}://${req.get('host')}/apply`;
@@ -277,14 +282,25 @@ app.post('/api/track', async (req, res) => {
     const eventData = {
       eventId: effectiveEventId,
       sourceUrl,
-      contentName: customData.content_name || 'Fynex Partner Application',
-      contentCategory: customData.content_category || 'partner-lead',
-      contentType: customData.content_type || 'lead',
+      contentName:
+        customData.content_name ||
+        customData.contentName ||
+        'Fynex Partner Application',
+      contentCategory:
+        customData.content_category ||
+        customData.contentCategory ||
+        'partner-lead',
+      contentType:
+        customData.content_type || customData.contentType || 'lead',
       status: customData.status,
     };
 
     const userData = {
-      emailHash: tracking.emailHash || null,
+      emailHash:
+        tracking.emailHash ||
+        customData.emailHash ||
+        body.emailHash ||
+        null,
       fbp: tracking.fbp || req.fbp,
       fbc: tracking.fbc || req.cookies?._fbc || null,
       ttp: tracking.ttp || req.cookies?._ttp || null,
