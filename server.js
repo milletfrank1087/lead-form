@@ -519,7 +519,45 @@ async function handleCreateLead(req, res) {
 app.post('/api/leads', handleCreateLead);
 app.post('/api/apply', handleCreateLead);
 
-app.get('/api/dashboard', (req, res) => {
+const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || 'jake123';
+
+function isDashboardAuthorized(req) {
+  const headerPw = req.headers['x-dashboard-password'];
+  const cookiePw = req.cookies?.fynex_dash_auth;
+  const queryPw = req.query?.password;
+  return (
+    headerPw === DASHBOARD_PASSWORD ||
+    cookiePw === DASHBOARD_PASSWORD ||
+    queryPw === DASHBOARD_PASSWORD
+  );
+}
+
+function requireDashboardAuth(req, res, next) {
+  if (isDashboardAuthorized(req)) {
+    return next();
+  }
+  return res.status(401).json({ error: 'Unauthorized. Dashboard password required.' });
+}
+
+app.post('/api/dashboard/auth', (req, res) => {
+  const { password } = req.body || {};
+  if (password === DASHBOARD_PASSWORD) {
+    res.cookie('fynex_dash_auth', DASHBOARD_PASSWORD, {
+      httpOnly: true,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    return res.json({ ok: true });
+  }
+  return res.status(401).json({ error: 'Invalid password' });
+});
+
+app.post('/api/dashboard/logout', (req, res) => {
+  res.clearCookie('fynex_dash_auth');
+  res.json({ ok: true });
+});
+
+app.get('/api/dashboard', requireDashboardAuth, (req, res) => {
   const trackingCfg = getTrackingConfig();
   res.json({
     leads: store.leads,
@@ -536,7 +574,7 @@ app.get('/api/dashboard', (req, res) => {
   });
 });
 
-app.patch('/api/leads/:leadId', async (req, res) => {
+app.patch('/api/leads/:leadId', requireDashboardAuth, async (req, res) => {
   const { leadId } = req.params;
   const { status, notes } = req.body || {};
   const lead = store.leads.find((l) => l.leadId === leadId);
@@ -551,7 +589,7 @@ app.patch('/api/leads/:leadId', async (req, res) => {
   res.json({ success: true, lead });
 });
 
-app.delete('/api/leads/:leadId', async (req, res) => {
+app.delete('/api/leads/:leadId', requireDashboardAuth, async (req, res) => {
   const { leadId } = req.params;
   const idx = store.leads.findIndex((l) => l.leadId === leadId);
   if (idx === -1) {
@@ -563,7 +601,7 @@ app.delete('/api/leads/:leadId', async (req, res) => {
   res.json({ success: true });
 });
 
-app.post('/api/dashboard/reset', async (req, res) => {
+app.post('/api/dashboard/reset', requireDashboardAuth, async (req, res) => {
   store.leads = [];
   store.events = [];
   visitors.clear();

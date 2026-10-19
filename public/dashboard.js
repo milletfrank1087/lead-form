@@ -4,6 +4,53 @@
   let activeRange = 'all';
   let activeStatus = 'ALL';
   let searchQuery = '';
+  let pollTimer = null;
+
+  function getStoredPassword() {
+    try {
+      return sessionStorage.getItem('fynex_dash_pw') || '';
+    } catch {
+      return '';
+    }
+  }
+
+  function setStoredPassword(pw) {
+    try {
+      if (pw) sessionStorage.setItem('fynex_dash_pw', pw);
+      else sessionStorage.removeItem('fynex_dash_pw');
+    } catch {}
+  }
+
+  function authHeaders(extra = {}) {
+    const pw = getStoredPassword();
+    return pw ? { ...extra, 'x-dashboard-password': pw } : { ...extra };
+  }
+
+  function showAuthGate(showError = false) {
+    const gate = document.getElementById('authGateModal');
+    const err = document.getElementById('authErrorMsg');
+    const input = document.getElementById('dashboardPasswordInput');
+    if (gate) {
+      gate.classList.remove('hidden');
+      gate.classList.add('flex');
+    }
+    if (err) {
+      err.classList.toggle('hidden', !showError);
+    }
+    if (input) {
+      setTimeout(() => input.focus(), 50);
+    }
+  }
+
+  function hideAuthGate() {
+    const gate = document.getElementById('authGateModal');
+    const err = document.getElementById('authErrorMsg');
+    if (gate) {
+      gate.classList.add('hidden');
+      gate.classList.remove('flex');
+    }
+    if (err) err.classList.add('hidden');
+  }
 
   const CREDIT_LABELS = {
     '750_plus': '750+ (Excellent)',
@@ -289,14 +336,21 @@
     const icon = document.getElementById('refreshIcon');
     if (icon) icon.classList.add('animate-spin');
     try {
-      const res = await fetch('/api/dashboard');
+      const res = await fetch('/api/dashboard', { headers: authHeaders() });
+      if (res.status === 401) {
+        showAuthGate(false);
+        return false;
+      }
+      hideAuthGate();
       const data = await res.json();
       allLeads = Array.isArray(data.leads) ? data.leads : [];
       allEvents = Array.isArray(data.events) ? data.events : [];
       renderIntegrationBadges(data.tracking);
       renderAll();
+      return true;
     } catch (e) {
       console.error('Failed to load dashboard:', e);
+      return false;
     } finally {
       if (icon) icon.classList.remove('animate-spin');
     }
@@ -389,14 +443,57 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     fetchDashboard();
-    setInterval(fetchDashboard, 8000);
+    pollTimer = setInterval(fetchDashboard, 8000);
+
+    const authForm = document.getElementById('authGateForm');
+    if (authForm) {
+      authForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const input = document.getElementById('dashboardPasswordInput');
+        const pw = (input?.value || '').trim();
+        if (!pw) return;
+        try {
+          const res = await fetch('/api/dashboard/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pw }),
+          });
+          if (!res.ok) {
+            setStoredPassword('');
+            showAuthGate(true);
+            return;
+          }
+          setStoredPassword(pw);
+          if (input) input.value = '';
+          hideAuthGate();
+          await fetchDashboard();
+        } catch {
+          showAuthGate(true);
+        }
+      });
+    }
+
+    const lockBtn = document.getElementById('lockDashboardBtn');
+    if (lockBtn) {
+      lockBtn.addEventListener('click', async () => {
+        setStoredPassword('');
+        await fetch('/api/dashboard/logout', { method: 'POST' }).catch(() => {});
+        allLeads = [];
+        allEvents = [];
+        renderAll();
+        showAuthGate(false);
+      });
+    }
 
     document.getElementById('refreshBtn').addEventListener('click', fetchDashboard);
     document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
 
     document.getElementById('resetDataBtn').addEventListener('click', async () => {
       if (!confirm('Clear all stored applications and funnel events?')) return;
-      await fetch('/api/dashboard/reset', { method: 'POST' });
+      await fetch('/api/dashboard/reset', {
+        method: 'POST',
+        headers: authHeaders(),
+      });
       fetchDashboard();
     });
 
@@ -460,7 +557,10 @@
       if (delBtn) {
         const id = delBtn.getAttribute('data-lead-id');
         if (!confirm(`Delete lead ${id}?`)) return;
-        await fetch(`/api/leads/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        await fetch(`/api/leads/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+          headers: authHeaders(),
+        });
         fetchDashboard();
       }
     });
@@ -472,7 +572,7 @@
       const status = select.value;
       await fetch(`/api/leads/${encodeURIComponent(leadId)}`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({ status }),
       });
       fetchDashboard();
