@@ -10,6 +10,8 @@ export type ApplicationPayload = {
   message: string;
   referralCode: string;
   contactPref: string;
+  /** "@username", only when contactPref is "telegram". */
+  telegramHandle?: string;
   campaign: string;
 };
 

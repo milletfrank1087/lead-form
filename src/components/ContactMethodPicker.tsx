@@ -64,7 +64,13 @@ export const ContactMethodPicker = ({ value, onChange, error }: Props) => (
               : "bg-white border-zinc-200 text-zinc-500 hover:border-zinc-300 hover:text-zinc-700"
         }`}
       >
-        {method.icon}
+        {method.value === "telegram" && value === "telegram" ? (
+          <span key="selected" className="tg-fly">
+            {method.icon}
+          </span>
+        ) : (
+          method.icon
+        )}
         {method.label}
       </button>
     ))}

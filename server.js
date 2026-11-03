@@ -5,6 +5,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { createJourneyLog } from './lib/logger.js';
+import { normalizeTelegramHandle } from './lib/telegram.js';
 import { visitors, getClientInfo, getOrCreateVisitor } from './lib/visitors.js';
 import {
   trackEvent,
@@ -372,6 +373,7 @@ async function handleCreateLead(req, res) {
       message = '',
       referralCode = '',
       contactPref,
+      telegramHandle = '',
       campaign = 'direct',
       timeToSubmitMs = null,
       tracking = {},
@@ -386,6 +388,15 @@ async function handleCreateLead(req, res) {
       );
       return res.status(400).json({ error: 'Please complete all required application fields.' });
     }
+
+    // The username is only meaningful for people who chose Telegram, and it is checked again here because
+    // the browser is not trusted. A bad or missing one never rejects the lead (the form carries on to its
+    // success screen whatever the server says, so a 400 would silently lose the applicant): the lead is
+    // saved without it and the CRM falls back to their phone number.
+    const telegramValue =
+      String(contactPref).trim().toLowerCase() === 'telegram'
+        ? normalizeTelegramHandle(telegramHandle)
+        : '';
 
     const leadId = `LEAD-${Date.now().toString(36).toUpperCase()}-${Math.random()
       .toString(36)
@@ -450,6 +461,7 @@ async function handleCreateLead(req, res) {
       employed: String(employed).trim(),
       creditScore: String(creditScore).trim(),
       contactPref: String(contactPref).trim(),
+      telegramHandle: telegramValue,
       referralCode: String(referralCode).trim(),
       message: String(message).trim(),
       campaign: String(campaign || 'direct').trim(),

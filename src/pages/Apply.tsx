@@ -6,11 +6,13 @@ import { BackToHomeButton } from "@/components/BackToHomeButton";
 import { ContactMethodPicker, type ContactMethod } from "@/components/ContactMethodPicker";
 import { SelectField } from "@/components/SelectField";
 import { StateCombobox } from "@/components/StateCombobox";
+import { TelegramHandleField } from "@/components/TelegramHandleField";
 import { brand } from "@/config/brand";
 import { resolveCampaign } from "@/lib/campaign";
 import { CREDIT_SCORE_OPTIONS, EMPLOYMENT_OPTIONS } from "@/lib/form-options";
 import { formatUsPhone } from "@/lib/phone";
 import { submitApplication } from "@/lib/submit-application";
+import { normalizeTelegramHandle } from "@/lib/telegram";
 import { US_STATES } from "@/lib/us-states";
 
 type FormState = {
@@ -25,6 +27,8 @@ type FormState = {
   message: string;
   referralCode: string;
   contactPref: ContactMethod | "";
+  /** Asked only when Telegram is the chosen contact method. */
+  telegramHandle: string;
   agree: boolean;
 };
 
@@ -40,6 +44,7 @@ const INITIAL_FORM: FormState = {
   message: "",
   referralCode: "",
   contactPref: "",
+  telegramHandle: "",
   agree: false,
 };
 
@@ -68,6 +73,10 @@ const Apply = () => {
   const [searchParams] = useSearchParams();
   const [campaign] = useState(() => resolveCampaign(searchParams.get("campaign")));
 
+  /** Picking Telegram requires a username that could really be one; every other method needs none. */
+  const telegramMissing =
+    form.contactPref === "telegram" && normalizeTelegramHandle(form.telegramHandle) === "";
+
   const isComplete = () =>
     !!(
       form.firstName &&
@@ -77,6 +86,7 @@ const Apply = () => {
       form.employed &&
       form.creditScore &&
       form.contactPref &&
+      !telegramMissing &&
       form.agree
     );
 
@@ -148,6 +158,7 @@ const Apply = () => {
       if (!form.employed) missing.push("employed");
       if (!form.creditScore) missing.push("creditScore");
       if (!form.contactPref) missing.push("contactPref");
+      if (telegramMissing) missing.push("telegramHandle");
       if (!form.agree) missing.push("agree");
       window.FunnelMonitor?.stage("validation_error");
       window.Tracking?.trackFormEvent(
@@ -173,6 +184,9 @@ const Apply = () => {
         message: form.message,
         referralCode: form.referralCode,
         contactPref: form.contactPref,
+        // Only sent for Telegram; a username typed and then abandoned for another method is not.
+        telegramHandle:
+          form.contactPref === "telegram" ? normalizeTelegramHandle(form.telegramHandle) : "",
         campaign,
       });
     } catch (error) {
@@ -421,11 +435,22 @@ const Apply = () => {
                   </p>
                   <p className="text-xs text-zinc-400 font-sans">How should we get back to you?</p>
                 </div>
-                <ContactMethodPicker
-                  value={form.contactPref}
-                  onChange={(value) => setField("contactPref", value)}
-                  error={hasError("contactPref")}
-                />
+                <div>
+                  <ContactMethodPicker
+                    value={form.contactPref}
+                    onChange={(value) => setField("contactPref", value)}
+                    error={hasError("contactPref")}
+                  />
+                  <TelegramHandleField
+                    open={form.contactPref === "telegram"}
+                    value={form.telegramHandle}
+                    onChange={(value) => setField("telegramHandle", value)}
+                    error={showErrors && telegramMissing}
+                    inputClass={inputClass}
+                    inputErrorClass={inputErrorClass}
+                    labelClass={labelClass}
+                  />
+                </div>
               </div>
 
               <div className="flex items-start gap-3 px-1">

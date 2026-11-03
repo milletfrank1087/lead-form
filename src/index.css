@@ -129,6 +129,33 @@
   }
 }
 
+/* The Telegram paper plane flies in when Telegram is picked as the contact method. */
+@keyframes tgFly {
+  0% {
+    opacity: 0;
+    transform: translate(-10px, 10px) rotate(-18deg) scale(0.7);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(3px, -3px) rotate(6deg) scale(1.12);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+}
+
+.tg-fly {
+  display: inline-flex;
+  animation: tgFly 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tg-fly {
+    animation: none;
+  }
+}
+
 @keyframes bounceDot {
   0%,
   100% {
