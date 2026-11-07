@@ -395,7 +395,7 @@ export function CreditStep({ data, errors, set }: StepCtx) {
           </div>
           <p>
             We never pull your credit report. Looking up your own score is a soft inquiry and does not
-            affect it. Below 650 does not mean no — it goes to a review of your banking options instead.
+            affect it. A lower range does not mean no — it goes to a review of your banking options instead.
           </p>
         </div>
 
@@ -495,7 +495,7 @@ export function PartStep({ data, errors, set, tzDetected }: StepCtx) {
             error={errors.availSpeed}
           />
           <p className="hint">
-            We contact candidates who can verify within an hour first. Choosing a slower window is fine; it
+            The fastest responders are contacted first. Choosing a slower window is fine; it
             just means a longer wait between steps.
           </p>
         </div>
@@ -593,7 +593,7 @@ export function PartStep({ data, errors, set, tzDetected }: StepCtx) {
 export function ReadyStep({ data, errors, set, openLegal }: StepCtx) {
   const items: { t: string; q: string; w: ReactNode }[] = [
     {
-      t: "Your driver's licence",
+      t: "Your driver's license",
       q: "“Front and back of your license, all four corners showing, no glare.”",
       w: (
         <>
@@ -603,11 +603,11 @@ export function ReadyStep({ data, errors, set, openLegal }: StepCtx) {
       ),
     },
     {
-      t: "A selfie holding that licence",
+      t: "A selfie holding that license",
       q: "“Your face and the license in one photo. A headshot alone doesn't work.”",
       w: (
         <>
-          The licence shows who owns the LLC; the selfie proves the person holding it is really you. Both are
+          The license shows who owns the LLC; the selfie proves the person holding it is really you. Both are
           needed.
         </>
       ),
@@ -884,7 +884,7 @@ export function DoneScreen({ data, env, waMessage, waHref, onWhatsappTap, onCopy
         <li>
           <span className="ns-n">2</span>
           <span>
-            <b>She collects your documents, one at a time.</b> Licence, selfie, three months of statements.
+            <b>She collects your documents, one at a time.</b> License, selfie, three months of statements.
             Send them as <b>files</b>, not photos — chat apps shrink pictures and that's the usual reason an
             upload comes back blurry.
           </span>

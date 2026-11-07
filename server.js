@@ -471,7 +471,9 @@ async function handleCreateLead(req, res) {
       location: locationLabel,
       country: visitor.country || null,
       region: visitor.region || null,
-      device: visitor.device,
+      // From this request's user agent, not the visitor cache: that is keyed by IP and keeps whatever
+      // device it first saw, so a later request from a different device on the same IP was mislabelled.
+      device: clientInfo.device || visitor.device,
       userAgent: clientInfo.userAgent,
       fbp,
       fbc,
