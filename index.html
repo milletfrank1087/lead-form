@@ -8,6 +8,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="theme-color" content="#F4F5F7" />
+    <!-- The design is light-only: opts out of forced/auto dark mode in in-app browsers. -->
+    <meta name="color-scheme" content="light" />
+    <meta name="format-detection" content="telephone=no" />
+    <!--
+      Satoshi (headings + UI). Loaded without blocking first paint: media="print" fetches the stylesheet in the
+      background and onload flips it to "all". If the font host is slow or blocked inside an in-app browser the
+      page simply keeps the system font (the font stack in wizard.css is built for that).
+    -->
+    <link rel="preconnect" href="https://api.fontshare.com" crossorigin />
+    <link rel="preconnect" href="https://cdn.fontshare.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap"
+      media="print"
+      onload="this.media='all'"
+    />
+    <noscript>
+      <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" />
+    </noscript>
     <title>Fynex Network</title>
     <meta name="description" content="Apply to partner with Fynex Network." />
     <meta property="og:type" content="website" />

@@ -1,588 +1,596 @@
-import { useEffect, useState, type FormEvent } from "react";
-import { Link, useSearchParams } from "react-router-dom";
-import { ApplicationReceived } from "@/components/ApplicationReceived";
-import { ApplyBackground } from "@/components/ApplyBackground";
-import { BackToHomeButton } from "@/components/BackToHomeButton";
-import { ContactMethodPicker, type ContactMethod } from "@/components/ContactMethodPicker";
-import { SelectField } from "@/components/SelectField";
-import { StateCombobox } from "@/components/StateCombobox";
-import { TelegramHandleField } from "@/components/TelegramHandleField";
+import "@fontsource/jetbrains-mono/latin-400.css";
+import "@fontsource/jetbrains-mono/latin-500.css";
+import "@/styles/wizard.css";
+
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+} from "react";
+import { useSearchParams } from "react-router-dom";
+import { LegalModal } from "@/components/wizard/LegalModal";
+import { IconArrow, IconChevronLeft, IconCheck } from "@/components/wizard/icons";
+import type { LegalKey } from "@/components/wizard/legal";
+import {
+  ChannelStep,
+  CoverStep,
+  CreditStep,
+  DetailsStep,
+  DoneScreen,
+  PartStep,
+  ReadyStep,
+  type StepCtx,
+} from "@/components/wizard/Steps";
 import { brand } from "@/config/brand";
 import { resolveCampaign } from "@/lib/campaign";
-import { CREDIT_SCORE_OPTIONS, EMPLOYMENT_OPTIONS } from "@/lib/form-options";
-import { formatUsPhone } from "@/lib/phone";
 import { submitApplication } from "@/lib/submit-application";
 import { normalizeTelegramHandle } from "@/lib/telegram";
-import { US_STATES } from "@/lib/us-states";
+import { clearDraft, loadDraft, saveDraft } from "@/lib/wizard/draft";
+import {
+  buildLeadMessage,
+  buildWhatsappMessage,
+  detectEnv,
+  whatsappHref,
+} from "@/lib/wizard/handoff";
+import { STEPS, type Errors, type FieldKey, type WizardData } from "@/lib/wizard/options";
+import { errorFor, fieldsForStep, splitName, validateFields } from "@/lib/wizard/validate";
+import { detectZone } from "@/lib/wizard/zone";
 
-type FormState = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  city: string;
-  state: string;
-  employed: string;
-  creditScore: string;
-  message: string;
-  referralCode: string;
-  contactPref: ContactMethod | "";
-  /** Asked only when Telegram is the chosen contact method. */
-  telegramHandle: string;
-  agree: boolean;
+/** The button reads "Submitting…" for at least this long, so a fast response never just flickers. */
+const MIN_BUSY_MS = 500;
+/** How long the "Application received" wipe stays up before the confirmation screen replaces it. */
+const OVERLAY_MS = 1150;
+
+type Phase = "form" | "submitting" | "sent" | "done";
+type Direction = "fwd" | "back";
+
+const reducedMotion = (): boolean =>
+  typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+const sleep = (ms: number) => new Promise<void>((resolve) => window.setTimeout(resolve, ms));
+const pad = (n: number) => String(n).padStart(2, "0");
+
+/** Entries this page adds to history carry `wz: <step>`; they are merged into whatever the router stored. */
+const historyState = (wz: number) => ({ ...((window.history.state as object | null) ?? {}), wz });
+const currentWz = (): number | null => {
+  const wz = (window.history.state as { wz?: unknown } | null)?.wz;
+  return typeof wz === "number" ? wz : null;
 };
-
-const INITIAL_FORM: FormState = {
-  firstName: "",
-  lastName: "",
-  email: "",
-  phone: "",
-  city: "",
-  state: "",
-  employed: "",
-  creditScore: "",
-  message: "",
-  referralCode: "",
-  contactPref: "",
-  telegramHandle: "",
-  agree: false,
-};
-
-const STATE_OPTIONS = US_STATES.map((state) => ({ value: state, label: state }));
-
-/** The "Submitting..." overlay stays up at least this long, so it never just flickers. */
-const MIN_SUBMIT_OVERLAY_MS = 2000;
-/** How long the white check-mark flash shows before the "Application Received" screen replaces the form. */
-const SUCCESS_FLASH_MS = 650;
-
-const inputClass =
-  "w-full rounded-xl border border-zinc-200 bg-white px-4 py-3 text-base sm:text-sm text-zinc-900 font-sans placeholder:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all hover:border-zinc-300";
-const inputErrorClass = "border-red-400 ring-2 ring-red-100 focus:border-red-400";
-const labelClass =
-  "block text-xs font-semibold text-zinc-500 mb-1.5 font-sans uppercase tracking-widest";
-const sectionLabelClass = "text-[10px] font-semibold text-zinc-400 uppercase tracking-widest font-sans";
-const cardClass = "bg-white rounded-2xl border border-zinc-100 shadow-sm p-7 space-y-5";
 
 const Apply = () => {
-  const [form, setForm] = useState<FormState>(INITIAL_FORM);
-  const [submitted, setSubmitted] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [showSuccessFlash, setShowSuccessFlash] = useState(false);
-  const [booting, setBooting] = useState(true);
-  const [showErrors, setShowErrors] = useState(false);
   const [searchParams] = useSearchParams();
   const [campaign] = useState(() => resolveCampaign(searchParams.get("campaign")));
+  const [referralCode] = useState(() =>
+    (searchParams.get("ref") || searchParams.get("referral") || "").toUpperCase(),
+  );
+  const env = useMemo(() => detectEnv(), []);
+  const tzDetected = useMemo(() => detectZone(), []);
 
-  /** Picking Telegram requires a username that could really be one; every other method needs none. */
-  const telegramMissing =
-    form.contactPref === "telegram" && normalizeTelegramHandle(form.telegramHandle) === "";
+  const [data, setData] = useState<WizardData>(() => {
+    const draft = loadDraft();
+    return draft.timezone || !tzDetected ? draft : { ...draft, timezone: tzDetected };
+  });
+  const dataRef = useRef(data);
 
-  const isComplete = () =>
-    !!(
-      form.firstName &&
-      form.lastName &&
-      form.email &&
-      form.phone &&
-      form.employed &&
-      form.creditScore &&
-      form.contactPref &&
-      !telegramMissing &&
-      form.agree
-    );
+  const [step, setStep] = useState(0);
+  const stepRef = useRef(0);
+  const [dir, setDir] = useState<Direction>("fwd");
+  const [errors, setErrors] = useState<Errors>({});
+  const [phase, setPhase] = useState<Phase>("form");
+  const phaseRef = useRef<Phase>("form");
+  const [legal, setLegal] = useState<LegalKey | null>(null);
+  const [announce, setAnnounce] = useState("");
 
-  /** Red highlight, shown only after the first submit attempt. */
-  const hasError = (key: keyof FormState) => showErrors && !form[key];
+  const cardRef = useRef<HTMLDivElement>(null);
+  const priorHeight = useRef(0);
 
-  const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
-    setForm((previous) => {
-      const next = { ...previous, [key]: value };
-      if (
-        (key === "firstName" ||
-          key === "lastName" ||
-          key === "email" ||
-          key === "phone" ||
-          key === "city" ||
-          key === "state") &&
-        value
-      ) {
-        window.Tracking?.fireFormStartedOnce();
-        window.FunnelMonitor?.stage("personal_info");
-      }
-      if (key === "employed" || key === "creditScore") {
-        window.FunnelMonitor?.stage("qualification");
-        const emp = key === "employed" ? String(value) : previous.employed;
-        const cred = key === "creditScore" ? String(value) : previous.creditScore;
-        if (emp && cred) {
-          window.Tracking?.trackFormEvent(
-            "qualification_selected",
-            `${emp} · credit:${cred}`,
-          );
-        }
-      }
-      if (key === "contactPref" && value) {
-        window.FunnelMonitor?.stage("contact_method");
-        window.Tracking?.trackFormEvent(
-          "contact_method_selected",
-          `preferred: ${String(value)}`,
-        );
-      }
-      return next;
-    });
+  const setPhaseBoth = (next: Phase) => {
+    phaseRef.current = next;
+    setPhase(next);
   };
+
+  /* ------------------------------------------------------------------ page chrome ---------- */
 
   useEffect(() => {
     window.scrollTo(0, 0);
-    const refParam = searchParams.get("ref") || searchParams.get("referral");
-    if (refParam) {
-      setForm((prev) =>
-        prev.referralCode ? prev : { ...prev, referralCode: refParam.toUpperCase() },
-      );
-    }
-  }, [searchParams]);
-
-  // White cover that is dropped right after mount, then fades out (avoids a flash of unstyled content).
-  useEffect(() => {
-    const timer = setTimeout(() => setBooting(false), 50);
-    return () => clearTimeout(timer);
+    document.documentElement.classList.add("wz-active");
+    return () => document.documentElement.classList.remove("wz-active");
   }, []);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setShowErrors(true);
-    if (!isComplete()) {
-      const missing: string[] = [];
-      if (!form.firstName) missing.push("firstName");
-      if (!form.lastName) missing.push("lastName");
-      if (!form.email) missing.push("email");
-      if (!form.phone) missing.push("phone");
-      if (!form.employed) missing.push("employed");
-      if (!form.creditScore) missing.push("creditScore");
-      if (!form.contactPref) missing.push("contactPref");
-      if (telegramMissing) missing.push("telegramHandle");
-      if (!form.agree) missing.push("agree");
-      window.FunnelMonitor?.stage("validation_error");
-      window.Tracking?.trackFormEvent(
-        "validation_error",
-        `missing: ${missing.join(", ")}`,
-      );
+  // Keep what has been typed, so a webview that reloads the page does not lose it.
+  useEffect(() => {
+    if (phase === "form") saveDraft(data);
+  }, [data, phase]);
+
+  /* ------------------------------------------------------------------ step changes --------- */
+
+  const showStep = useCallback((next: number, direction: Direction) => {
+    priorHeight.current = cardRef.current?.getBoundingClientRect().height ?? 0;
+    stepRef.current = next;
+    setDir(direction);
+    setStep(next);
+    setErrors({});
+  }, []);
+
+  const settle = useCallback((index: number, track: boolean) => {
+    const id = STEPS[index].id;
+    if (track) {
+      if (id === "credit" || id === "part" || id === "ready") window.FunnelMonitor?.stage("qualification");
+      if (id === "channel") window.FunnelMonitor?.stage("contact_method");
+      window.Tracking?.trackFormEvent("step_viewed", id);
+    }
+    if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: reducedMotion() ? "auto" : "smooth" });
+    window.setTimeout(() => document.getElementById("stepTitle")?.focus({ preventScroll: true }), 60);
+  }, []);
+
+  // Let the card grow or shrink between steps instead of jumping.
+  useLayoutEffect(() => {
+    const card = cardRef.current;
+    const before = priorHeight.current;
+    priorHeight.current = 0;
+    if (!card || before < 40 || reducedMotion()) return undefined;
+    const after = card.getBoundingClientRect().height;
+    if (Math.abs(after - before) < 3) return undefined;
+    card.style.height = `${before}px`;
+    void card.offsetHeight;
+    card.style.transition = "height .42s cubic-bezier(.16,1,.3,1)";
+    card.style.height = `${after}px`;
+    const timer = window.setTimeout(() => {
+      card.style.height = "";
+      card.style.transition = "";
+    }, 460);
+    return () => {
+      window.clearTimeout(timer);
+      card.style.height = "";
+      card.style.transition = "";
+    };
+  }, [step, phase]);
+
+  /* Every step is its own history entry, so Android Back / the iOS edge swipe inside an ad app's
+     browser goes to the previous step instead of closing the whole browser and losing the form. */
+  useEffect(() => {
+    let previousRestoration: ScrollRestoration | null = null;
+    try {
+      previousRestoration = window.history.scrollRestoration;
+      window.history.scrollRestoration = "manual";
+      window.history.replaceState(historyState(0), "");
+    } catch {
+      // History can be restricted in some webviews: the buttons still work without it.
+    }
+
+    const onPop = (event: PopStateEvent) => {
+      const wz = (event.state as { wz?: unknown } | null)?.wz;
+      if (typeof wz !== "number") return;
+      if (phaseRef.current === "done") {
+        // Submitted: step back through the old form entries in one go, then stop at the entry before them,
+        // so one more Back leaves the page rather than showing a form that has already been sent.
+        if (wz > 0) window.history.back();
+        return;
+      }
+      if (phaseRef.current !== "form") return;
+      const target = Math.max(0, Math.min(STEPS.length - 1, wz));
+      if (target === stepRef.current) return;
+      const direction: Direction = target < stepRef.current ? "back" : "fwd";
+      showStep(target, direction);
+      settle(target, false);
+    };
+
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      try {
+        if (previousRestoration) window.history.scrollRestoration = previousRestoration;
+      } catch {
+        // Nothing to restore.
+      }
+    };
+  }, [showStep, settle]);
+
+  /* ------------------------------------------------------------------ fields --------------- */
+
+  const set = useCallback(<K extends keyof WizardData>(key: K, value: WizardData[K]) => {
+    const next = { ...dataRef.current, [key]: value };
+    dataRef.current = next;
+    setData(next);
+
+    // Fields that are showing an error clear (or update) as soon as the value changes.
+    setErrors((current) => {
+      const keys = Object.keys(current) as FieldKey[];
+      if (!keys.length) return current;
+      const out: Errors = {};
+      keys.forEach((k) => {
+        const message = errorFor(k, next);
+        if (message) out[k] = message;
+      });
+      return out;
+    });
+
+    if ((key === "legalName" || key === "email" || key === "mobile") && value) {
+      window.Tracking?.fireFormStartedOnce();
+      window.FunnelMonitor?.stage("personal_info");
+    }
+    if (key === "creditBand" && value) {
+      window.FunnelMonitor?.stage("qualification");
+      window.Tracking?.trackFormEvent("qualification_selected", `credit:${String(value)}`);
+    }
+    if (key === "availSpeed" && value) {
+      window.Tracking?.trackFormEvent("availability_selected", `speed:${String(value)}`);
+    }
+    if (key === "contactPref" && value) {
+      window.FunnelMonitor?.stage("contact_method");
+      window.Tracking?.trackFormEvent("contact_method_selected", `preferred: ${String(value)}`);
+    }
+  }, []);
+
+  /** Validate a field when the person leaves it, but only if they typed something: empty fields are
+   *  reported when they press Continue, not the moment they tab past. */
+  const blur = useCallback((key: FieldKey) => {
+    const d = dataRef.current;
+    if (!String(d[key]).trim()) return;
+    const message = errorFor(key, d);
+    setErrors((current) => {
+      if (message) return current[key] === message ? current : { ...current, [key]: message };
+      if (!(key in current)) return current;
+      const copy = { ...current };
+      delete copy[key];
+      return copy;
+    });
+  }, []);
+
+  /* ------------------------------------------------------------------ navigation ----------- */
+
+  const focusInvalid = (key: FieldKey) => {
+    window.requestAnimationFrame(() => {
+      const control =
+        document.getElementById(`in-${key}`) ?? document.querySelector<HTMLInputElement>(`input[name="${key}"]`);
+      const target = (control?.closest(".opt, .consent") as HTMLElement | null) ?? control;
+      if (target) {
+        target.scrollIntoView({ block: "center", behavior: reducedMotion() ? "auto" : "smooth" });
+        target.classList.remove("nudge");
+        void target.offsetWidth;
+        target.classList.add("nudge");
+      }
+      control?.focus({ preventScroll: true });
+    });
+  };
+
+  const reportInvalid = (stepId: string, found: Errors, first: FieldKey) => {
+    window.Tracking?.trackFormEvent("validation_error", `step:${stepId} missing: ${Object.keys(found).join(", ")}`);
+    // Only the last step marks the funnel as "validation_error": earlier steps would hide how far people got.
+    if (stepId === "channel") window.FunnelMonitor?.stage("validation_error");
+    setAnnounce(`${found[first] ?? "Please check this step"}.`);
+  };
+
+  const advance = () => {
+    const next = Math.min(stepRef.current + 1, STEPS.length - 1);
+    try {
+      window.history.pushState(historyState(next), "");
+    } catch {
+      // Without history the on-screen buttons still work.
+    }
+    showStep(next, "fwd");
+    settle(next, true);
+  };
+
+  const goBack = () => {
+    if (phaseRef.current !== "form" || stepRef.current === 0) return;
+    // Going through history keeps the browser's own Back button in step with ours.
+    if (currentWz() === stepRef.current) {
+      window.history.back();
+      return;
+    }
+    const target = stepRef.current - 1;
+    showStep(target, "back");
+    settle(target, false);
+  };
+
+  const submit = async () => {
+    const d = dataRef.current;
+
+    // Check everything once more: whatever the server would reject must never get this far, because
+    // the form carries on to its success screen even when the server says no.
+    const all = STEPS.flatMap((s) => fieldsForStep(s.id, d));
+    const found = validateFields(all, d);
+    const firstBad = all.find((k) => found[k]);
+    if (firstBad) {
+      const index = STEPS.findIndex((s) => fieldsForStep(s.id, d).includes(firstBad));
+      if (index !== stepRef.current) {
+        showStep(index, "back");
+        settle(index, false);
+      }
+      const here = fieldsForStep(STEPS[index].id, d);
+      const visible: Errors = {};
+      here.forEach((k) => {
+        if (found[k]) visible[k] = found[k];
+      });
+      setErrors(visible);
+      reportInvalid(STEPS[index].id, visible, firstBad);
+      focusInvalid(firstBad);
       return;
     }
 
-    setSubmitting(true);
+    setPhaseBoth("submitting");
+    setAnnounce("Submitting your application");
     const startedAt = Date.now();
+    const { firstName, lastName } = splitName(d.legalName);
 
     try {
       await submitApplication({
-        firstName: form.firstName,
-        lastName: form.lastName,
-        email: form.email,
-        phone: form.phone,
-        city: form.city,
-        state: form.state,
-        employed: form.employed,
-        creditScore: form.creditScore,
-        message: form.message,
-        referralCode: form.referralCode,
-        contactPref: form.contactPref,
-        // Only sent for Telegram; a username typed and then abandoned for another method is not.
-        telegramHandle:
-          form.contactPref === "telegram" ? normalizeTelegramHandle(form.telegramHandle) : "",
+        firstName,
+        lastName,
+        email: d.email.trim(),
+        phone: d.mobile,
+        city: "",
+        state: "",
+        // The server insists on a value; the wizard no longer asks about employment.
+        employed: "not-collected",
+        creditScore: d.creditBand,
+        message: buildLeadMessage(d),
+        referralCode,
+        contactPref: d.contactPref,
+        // Only sent for Telegram; a handle typed and then abandoned for another method is not.
+        telegramHandle: d.contactPref === "telegram" ? normalizeTelegramHandle(d.telegramHandle) : "",
         campaign,
       });
     } catch (error) {
-      // Same behaviour as the original page: carry on to the success screen even if sending failed.
+      // Same behaviour as the page this replaces: carry on to the confirmation even if sending failed.
       console.error("submitApplication failed", error);
     }
 
-    const overlayTimeLeft = Math.max(0, MIN_SUBMIT_OVERLAY_MS - (Date.now() - startedAt));
-    window.setTimeout(() => {
-      setSubmitting(false);
-      setShowSuccessFlash(true);
-      window.setTimeout(() => {
-        setSubmitted(true);
-        setShowSuccessFlash(false);
-      }, SUCCESS_FLASH_MS);
-    }, overlayTimeLeft);
+    await sleep(Math.max(0, MIN_BUSY_MS - (Date.now() - startedAt)));
+    clearDraft();
+    setPhaseBoth("sent");
+    await sleep(reducedMotion() ? 150 : OVERLAY_MS);
+    setPhaseBoth("done");
+    setAnnounce("Application received. We'll be in touch.");
+    window.scrollTo({ top: 0, behavior: "auto" });
+    window.setTimeout(() => document.getElementById("stepTitle")?.focus({ preventScroll: true }), 60);
   };
 
-  return (
-    <div className="min-h-screen relative bg-white text-zinc-900 font-sans selection:bg-primary/20 selection:text-primary">
-      <ApplyBackground />
+  const next = () => {
+    if (phaseRef.current !== "form") return;
+    const id = STEPS[stepRef.current].id;
+    const d = dataRef.current;
+    const keys = fieldsForStep(id, d);
+    const found = validateFields(keys, d);
+    const first = keys.find((k) => found[k]);
+    if (first) {
+      setErrors(found);
+      reportInvalid(id, found, first);
+      focusInvalid(first);
+      return;
+    }
+    setErrors({});
+    if (id === "channel") {
+      void submit();
+      return;
+    }
+    advance();
+  };
 
-      {submitting && (
-        <div
-          className="fixed inset-0 z-[9999] bg-primary flex flex-col items-center justify-center gap-8"
-          style={{ animation: "fadeInOverlay 0.25s ease-out both" }}
-        >
-          <div className="relative flex items-center justify-center">
-            <div className="absolute w-40 h-40 rounded-full border-2 border-white/20 animate-[ping_2s_ease-out_infinite]" />
-            <div className="absolute w-32 h-32 rounded-full border border-white/30 animate-[spin_3s_linear_infinite]" />
-            <div className="absolute w-24 h-24 rounded-full border border-white/20 animate-[spin_2s_linear_infinite_reverse]" />
-            <div className="relative w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center shadow-2xl">
-              <img src={brand.logoSrc} alt={brand.shortName} className="w-10 h-10 object-contain rounded-full" />
+  const onFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    next();
+  };
+
+  const onFormKeyDown = (event: KeyboardEvent<HTMLFormElement>) => {
+    if (event.key !== "Enter" || event.nativeEvent.isComposing) return;
+    const target = event.target as HTMLInputElement;
+    if (target.tagName === "INPUT" && target.type !== "radio" && target.type !== "checkbox") {
+      event.preventDefault();
+      next();
+    }
+  };
+
+  /* ------------------------------------------------------------------ render --------------- */
+
+  const ctx: StepCtx = { data, errors, set, blur, openLegal: setLegal, tzDetected };
+  const def = STEPS[step];
+  const isCover = def.id === "cover";
+  const flowTotal = STEPS.length - 1; // the cover is not a numbered step
+  const flowPos = isCover ? 0 : step;
+  const done = phase === "done";
+  const pct = done ? 100 : isCover ? 0 : (flowPos / flowTotal) * 100;
+
+  const waMessage = useMemo(() => buildWhatsappMessage(data), [data]);
+  const waHref = useMemo(() => whatsappHref(waMessage, env), [waMessage, env]);
+
+  const nextLabel =
+    phase === "submitting"
+      ? "Submitting…"
+      : def.id === "channel"
+        ? "Submit application"
+        : step === 0
+          ? "Start application"
+          : "Continue";
+
+  const body = (() => {
+    switch (def.id) {
+      case "cover":
+        return <CoverStep />;
+      case "details":
+        return <DetailsStep {...ctx} />;
+      case "credit":
+        return <CreditStep {...ctx} />;
+      case "part":
+        return <PartStep {...ctx} />;
+      case "ready":
+        return <ReadyStep {...ctx} />;
+      default:
+        return <ChannelStep {...ctx} />;
+    }
+  })();
+
+  return (
+    <div className="wz">
+      <div className="app">
+        <aside className="rail">
+          <div className="rail-brand">
+            <img src={brand.logoSrc} alt="" />
+            <div>
+              <span className="w">{brand.shortName}</span>
+              <span className="t">Partner App</span>
             </div>
           </div>
-          <div className="text-center">
-            <p className="text-white text-lg font-semibold font-manrope tracking-tight">
-              Submitting your application…
-            </p>
-            <p className="text-white/60 text-sm font-sans mt-1">This will only take a moment</p>
-          </div>
-          <div className="flex gap-2">
-            {[0, 1, 2].map((index) => (
-              <div
-                key={index}
-                className="w-2 h-2 rounded-full bg-white/70"
-                style={{ animation: `bounceDot 1.2s ease-in-out ${index * 0.2}s infinite` }}
-              />
+          <nav aria-label="Application steps">
+            <ol className="rail-steps">
+              {STEPS.filter((s) => s.id !== "cover").map((s, i) => {
+                const flowIdx = i + 1;
+                const state = done
+                  ? "done"
+                  : isCover
+                    ? "todo"
+                    : flowIdx < step
+                      ? "done"
+                      : flowIdx === step
+                        ? "active"
+                        : "todo";
+                return (
+                  <li key={s.id} data-state={state}>
+                    <span className="dot" aria-hidden="true">
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M20 6 9 17l-5-5" />
+                      </svg>
+                    </span>
+                    <span className="nm">{s.label}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </nav>
+          <div className="rail-foot">
+            {["LLC formed in your name", "You never pay us anything", "No soft or hard credit check"].map((t) => (
+              <div className="assure" key={t}>
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M20 6 9 17l-5-5" />
+                </svg>
+                <span>{t}</span>
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        </aside>
 
-      <header
-        className="sticky top-0 z-50 w-full border-b border-zinc-100 bg-white/80 backdrop-blur-xl"
-        style={{ paddingTop: "env(safe-area-inset-top)" }}
-      >
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <img
-              src={brand.logoSrc}
-              alt={brand.name}
-              className="h-7 w-7 object-contain rounded-full ring-1 ring-zinc-300"
-            />
-            <span className="text-sm font-semibold tracking-widest uppercase text-zinc-900">{brand.name}</span>
-          </Link>
-          <BackToHomeButton size="sm" />
-        </div>
-      </header>
-
-      <main className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 pt-10 pb-20 sm:pb-24">
-        {submitted ? (
-          <ApplicationReceived contactPref={form.contactPref} />
-        ) : (
-          <>
-            <div className="mb-14 text-center">
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-medium tracking-tight text-zinc-900 font-manrope leading-tight mb-5">
-                Apply to partner
-                <br />
-                with{" "}
-                <span className="inline-flex items-center gap-2 align-middle">
-                  <svg
-                    width="44"
-                    height="44"
-                    viewBox="0 0 44 44"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="inline-block shrink-0 drop-shadow-sm"
-                    style={{ transform: "rotate(20deg)" }}
-                    aria-hidden="true"
-                  >
-                    <rect width="44" height="44" rx="12" fill="#2563EB" />
-                    <line x1="22" y1="11" x2="33" y2="30" stroke="white" strokeWidth="1.8" strokeOpacity="0.5" strokeLinecap="round" />
-                    <line x1="22" y1="11" x2="11" y2="30" stroke="white" strokeWidth="1.8" strokeOpacity="0.5" strokeLinecap="round" />
-                    <line x1="11" y1="30" x2="33" y2="30" stroke="white" strokeWidth="1.8" strokeOpacity="0.5" strokeLinecap="round" />
-                    <circle cx="22" cy="11" r="3.5" fill="white" />
-                    <circle cx="11" cy="30" r="3.5" fill="white" />
-                    <circle cx="33" cy="30" r="3.5" fill="white" />
-                  </svg>
-                  <span className="text-primary">{`${brand.name}.`}</span>
-                </span>
-              </h1>
-              <p className="text-zinc-500 text-lg leading-relaxed font-sans max-w-md mx-auto">
-                All applications are reviewed within 24 hours and kept strictly confidential.
-              </p>
+        <div className="stage">
+          <header className="topbar">
+            <div className="brand">
+              <img src={brand.logoSrc} alt="" />
+              <b>{brand.shortName}</b>
             </div>
+            <div className="counter" aria-hidden="true" style={{ visibility: isCover || done ? "hidden" : undefined }}>
+              <span className="cur">{pad(flowPos)}</span>
+              <span>/</span>
+              <span className="tot">{pad(flowTotal)}</span>
+            </div>
+          </header>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className={cardClass}>
-                <p className={sectionLabelClass}>Personal Information</p>
+          <div
+            className="progress"
+            role="progressbar"
+            aria-label="Application progress"
+            aria-valuemin={0}
+            aria-valuemax={flowTotal}
+            aria-valuenow={done ? flowTotal : flowPos}
+            aria-valuetext={
+              done ? "Application received" : isCover ? "Welcome screen" : `Step ${flowPos} of ${flowTotal}: ${def.label}`
+            }
+          >
+            <i style={{ width: `${pct}%` }} />
+          </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelClass}>
-                      First Name <span className="text-primary">*</span>
-                    </label>
-                    <input
-                      required
-                      value={form.firstName}
-                      onChange={(event) => setField("firstName", event.target.value)}
-                      placeholder="John"
-                      className={`${inputClass} ${hasError("firstName") ? inputErrorClass : ""}`}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>
-                      Last Name <span className="text-primary">*</span>
-                    </label>
-                    <input
-                      required
-                      value={form.lastName}
-                      onChange={(event) => setField("lastName", event.target.value)}
-                      placeholder="Smith"
-                      className={`${inputClass} ${hasError("lastName") ? inputErrorClass : ""}`}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className={labelClass}>
-                    Email Address <span className="text-primary">*</span>
-                  </label>
-                  <input
-                    required
-                    type="email"
-                    value={form.email}
-                    onChange={(event) => setField("email", event.target.value)}
-                    placeholder="john@example.com"
-                    className={`${inputClass} ${hasError("email") ? inputErrorClass : ""}`}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>
-                    US Phone Number <span className="text-primary">*</span>
-                  </label>
-                  <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-zinc-400 font-sans select-none pointer-events-none">
-                      +1
-                    </span>
-                    <input
-                      required
-                      type="tel"
-                      value={form.phone}
-                      onChange={(event) => setField("phone", formatUsPhone(event.target.value))}
-                      placeholder="(555) 000-0000"
-                      className={`${inputClass} pl-10 ${hasError("phone") ? inputErrorClass : ""}`}
-                      inputMode="numeric"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={labelClass}>City</label>
-                    <input
-                      value={form.city}
-                      onChange={(event) => setField("city", event.target.value)}
-                      placeholder="Los Angeles"
-                      className={inputClass}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>State</label>
-                    <StateCombobox
-                      value={form.state}
-                      onChange={(value) => setField("state", value)}
-                      options={STATE_OPTIONS}
-                      placeholder="Select a state…"
-                      searchPlaceholder="Search states…"
-                      emptyText="No states found."
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className={cardClass}>
-                <p className={sectionLabelClass}>Qualification Details</p>
-
-                <SelectField
-                  label="Employment Status"
-                  required
-                  value={form.employed}
-                  onChange={(value) => setField("employed", value)}
-                  options={EMPLOYMENT_OPTIONS}
-                  placeholder="Select your status…"
-                  error={hasError("employed")}
+          <main className="viewport">
+            <div className="card" ref={cardRef}>
+              {done ? (
+                <DoneScreen
+                  data={data}
+                  env={env}
+                  waMessage={waMessage}
+                  waHref={waHref}
+                  onWhatsappTap={() =>
+                    window.Tracking?.trackFormEvent(
+                      "whatsapp_cta_tapped",
+                      env.inApp ? `in-app:${env.app}` : env.isIOS || env.isAndroid ? "mobile-browser" : "desktop",
+                    )
+                  }
+                  onCopy={(ok) =>
+                    window.Tracking?.trackFormEvent("whatsapp_message_copied", ok ? "ok" : "manual-fallback")
+                  }
                 />
+              ) : (
+                <form noValidate autoComplete="on" onSubmit={onFormSubmit} onKeyDown={onFormKeyDown}>
+                  <section key={step} className={`step active dir-${dir}`}>
+                    {body}
+                  </section>
+                </form>
+              )}
+            </div>
+          </main>
 
-                <SelectField
-                  label="Approximate Credit Score"
-                  required
-                  value={form.creditScore}
-                  onChange={(value) => setField("creditScore", value)}
-                  options={CREDIT_SCORE_OPTIONS}
-                  placeholder="Select a range…"
-                  error={hasError("creditScore")}
-                />
-
-                <div>
-                  <label className={labelClass}>Additional Message (Optional)</label>
-                  <textarea
-                    value={form.message}
-                    onChange={(event) => setField("message", event.target.value)}
-                    rows={4}
-                    placeholder="Tell us a little about yourself and why you're interested…"
-                    className={`${inputClass} resize-none`}
-                  />
-                </div>
-
-                <div>
-                  <label className={labelClass}>Referral Code (Optional)</label>
-                  <input
-                    value={form.referralCode}
-                    onChange={(event) => setField("referralCode", event.target.value.toUpperCase())}
-                    placeholder="e.g. A1B2C3"
-                    className={`${inputClass} uppercase`}
-                  />
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-zinc-100 shadow-sm p-7 space-y-4">
-                <div>
-                  <p className={`${sectionLabelClass} mb-1`}>
-                    Preferred Contact Method <span className="text-primary">*</span>
-                  </p>
-                  <p className="text-xs text-zinc-400 font-sans">How should we get back to you?</p>
-                </div>
-                <div>
-                  <ContactMethodPicker
-                    value={form.contactPref}
-                    onChange={(value) => setField("contactPref", value)}
-                    error={hasError("contactPref")}
-                  />
-                  <TelegramHandleField
-                    open={form.contactPref === "telegram"}
-                    value={form.telegramHandle}
-                    onChange={(value) => setField("telegramHandle", value)}
-                    error={showErrors && telegramMissing}
-                    inputClass={inputClass}
-                    inputErrorClass={inputErrorClass}
-                    labelClass={labelClass}
-                  />
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3 px-1">
-                <button
-                  type="button"
-                  role="checkbox"
-                  aria-checked={form.agree}
-                  aria-labelledby="agree-label"
-                  onClick={() => setField("agree", !form.agree)}
-                  className={`mt-0.5 w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0 transition-all duration-200 ${
-                    form.agree
-                      ? "bg-primary border-primary"
-                      : hasError("agree")
-                        ? "border-red-400 bg-red-50"
-                        : "border-zinc-300 bg-white"
-                  }`}
-                >
-                  {form.agree && (
-                    <svg
-                      viewBox="0 0 12 12"
-                      className="w-3 h-3 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                    >
-                      <path d="M2 6l3 3 5-5" />
-                    </svg>
-                  )}
-                </button>
-                <p id="agree-label" className="text-xs text-zinc-400 leading-relaxed font-sans">
-                  {`I confirm all information is accurate and I agree to ${brand.name}'s `}
-                  <Link to="/terms" className="text-primary hover:underline">
-                    Terms
-                  </Link>{" "}
-                  and{" "}
-                  <Link to="/privacy" className="text-primary hover:underline">
-                    Privacy Policy
-                  </Link>
-                  .
-                </p>
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="group/btn w-full inline-flex items-center justify-center rounded-full bg-primary hover:bg-primary/90 shadow-sm hover:shadow-md active:scale-[0.98] transition-all duration-300 relative disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <span className="relative z-10 pl-8 pr-4 py-4 text-base font-medium font-sans text-white flex items-center gap-2 min-w-[200px] justify-center">
-                  {submitting ? (
-                    <>
-                      <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-20" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" />
-                        <path className="opacity-80" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                      Submitting…
-                    </>
-                  ) : (
-                    "Submit Application"
-                  )}
-                </span>
-                {!submitting && (
-                  <span className="relative z-10 flex items-center justify-center w-8 h-8 rounded-full bg-white mr-3 shrink-0 shadow-sm group-hover/btn:shadow-md transition-all duration-300">
-                    <svg
-                      className="w-3.5 h-3.5 text-primary group-hover/btn:translate-x-0.5 transition-transform duration-200"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      viewBox="0 0 24 24"
-                    >
-                      <path d="M5 12h14M12 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                )}
+          {!done && (
+            <footer className="nav">
+              <button type="button" className="btn btn-ghost" hidden={step === 0} disabled={phase !== "form"} onClick={goBack}>
+                <IconChevronLeft className="chev" />
+                Back
               </button>
-            </form>
-          </>
-        )}
-      </main>
-
-      <footer className="relative z-10 border-t border-zinc-100 py-8">
-        <div className="max-w-2xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-zinc-400 font-sans">
-          <p>{`© ${brand.copyrightYear} ${brand.legalEntity}. All rights reserved.`}</p>
-          <div className="flex gap-6">
-            <Link to="/privacy" className="hover:text-zinc-900 transition-colors">
-              Privacy
-            </Link>
-            <Link to="/terms" className="hover:text-zinc-900 transition-colors">
-              Terms
-            </Link>
-          </div>
-        </div>
-      </footer>
-
-      {booting && <div className="fixed inset-0 z-[9999] bg-white" />}
-      {!booting && (
-        <div
-          className="fixed inset-0 z-[9999] bg-white pointer-events-none"
-          style={{ animation: "fadeOutWhite 0.2s ease-out forwards" }}
-        />
-      )}
-
-      {showSuccessFlash && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-white"
-          style={{ animation: "flashIn 0.65s ease-out forwards" }}
-        >
-          <div style={{ animation: "popIn 0.4s cubic-bezier(0.34,1.56,0.64,1) 0.1s both" }}>
-            <div className="relative w-24 h-24 rounded-full bg-primary flex items-center justify-center shadow-2xl">
-              <div className="absolute inset-0 rounded-full bg-primary animate-ping opacity-30" />
-              <svg
-                viewBox="0 0 24 24"
-                className="w-12 h-12 text-white"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                style={{
-                  strokeDasharray: 30,
-                  strokeDashoffset: 30,
-                  animation: "drawCheck 0.35s ease-out 0.25s forwards",
-                }}
+              <button
+                type="button"
+                className="btn btn-primary"
+                disabled={phase !== "form"}
+                aria-busy={phase === "submitting" ? true : undefined}
+                onClick={next}
               >
-                <path d="M20 6L9 17l-5-5" />
-              </svg>
-            </div>
-          </div>
+                <span>{nextLabel}</span>
+                {phase === "form" && <IconArrow className="arrow" />}
+              </button>
+            </footer>
+          )}
         </div>
-      )}
+      </div>
+
+      {/* The "application received" wipe. Its mark is mounted only while it shows, so the rings and the
+          tick draw every time instead of finishing unseen at page load. */}
+      <div className={`send${phase === "sent" ? " on" : ""}`} aria-hidden={phase !== "sent"}>
+        <div className="send-in">
+          {phase === "sent" && (
+            <div className="ring">
+              <span />
+              <span />
+              <span />
+              <div className="core">
+                <IconCheck />
+              </div>
+            </div>
+          )}
+          <span className="send-label">Application received</span>
+        </div>
+      </div>
+
+      <LegalModal doc={legal} onClose={() => setLegal(null)} />
+
+      <div className="sr-only" aria-live="polite">
+        {announce}
+      </div>
     </div>
   );
 };

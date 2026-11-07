@@ -1,0 +1,1840 @@
+<!doctype html>
+<html lang="en" data-motion="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F4F5F7">
+<title>Fynex — Partner application (v3)</title>
+
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================================
+   TOKENS
+   ========================================================================== */
+:root{
+  --bg:#F4F5F7; --surface:#FFFFFF; --surface-2:#FAFBFC; --field:#FFFFFF;
+  --ink:#0C0F14; --ink-2:#363D48; --muted:#626C7A; --faint:#98A2B0;
+  --line:rgba(12,15,20,.085); --line-2:rgba(12,15,20,.17);
+  --wash:rgba(12,15,20,.038); --wash-2:rgba(12,15,20,.06);
+  --error:#B42318; --error-wash:rgba(180,35,24,.055);
+  --positive:#0B7A57; --positive-wash:rgba(11,122,87,.07);
+  --r-sm:10px; --r:12px; --r-lg:16px;
+  --font:"Satoshi","Manrope",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --ease-spring:cubic-bezier(.16,1,.3,1);
+  --ease-io:cubic-bezier(.4,0,.2,1);
+  --ease-pop:cubic-bezier(.34,1.56,.64,1);
+  --shadow-card:0 1px 2px rgba(12,15,20,.045),0 12px 32px -18px rgba(12,15,20,.16);
+  --shadow-btn:0 1px 2px rgba(12,15,20,.14),0 8px 20px -12px rgba(12,15,20,.5);
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;background:var(--bg);color:var(--ink);
+  font-family:var(--font);font-size:16px;line-height:1.5;
+  font-feature-settings:"ss01" on,"cv01" on;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  overflow-x:hidden;-webkit-tap-highlight-color:transparent;overscroll-behavior-y:none;
+}
+[hidden]{display:none !important}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ============================================================================
+   SHELL
+   ========================================================================== */
+.app{min-height:100dvh}
+.rail{display:none}
+
+@media (min-width:1024px){
+  .app{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100dvh}
+  .rail{
+    display:flex;flex-direction:column;position:sticky;top:0;height:100dvh;
+    padding:32px 26px 28px 30px;background:var(--surface-2);border-right:1px solid var(--line);
+  }
+  .rail-brand{display:flex;align-items:center;gap:10px;margin-bottom:38px}
+  .rail-brand img{width:32px;height:32px;border-radius:50%;object-fit:contain;box-shadow:0 0 0 1px var(--line)}
+  .rail-brand .w{font-size:17px;font-weight:700;letter-spacing:-.025em}
+  .rail-brand .t{display:block;margin-top:1px;font:500 9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .rail-steps{list-style:none;margin:0;padding:0}
+  .rail-steps li{
+    display:flex;align-items:center;gap:11px;padding:9px 0;
+    color:var(--faint);transition:color .35s var(--ease-io);
+  }
+  .rail-steps .dot{
+    flex:0 0 auto;width:17px;height:17px;border-radius:50%;
+    border:1.4px solid var(--line-2);display:grid;place-items:center;
+    transition:background .35s,border-color .35s;
+  }
+  .rail-steps .dot svg{width:8px;height:8px;opacity:0;transform:scale(.4);transition:opacity .2s,transform .3s var(--ease-pop);color:var(--surface)}
+  .rail-steps .nm{font-size:13.5px;font-weight:500;letter-spacing:-.008em}
+  .rail-steps li[data-state="done"]{color:var(--ink-2)}
+  .rail-steps li[data-state="done"] .dot{background:var(--ink);border-color:var(--ink)}
+  .rail-steps li[data-state="done"] .dot svg{opacity:1;transform:none}
+  .rail-steps li[data-state="active"]{color:var(--ink)}
+  .rail-steps li[data-state="active"] .dot{border-color:var(--ink);border-width:1.6px}
+  .rail-steps li[data-state="active"] .dot::after{content:"";width:5px;height:5px;border-radius:50%;background:var(--ink)}
+  .rail-steps li[data-state="active"] .nm{font-weight:700}
+  .rail-foot{margin-top:auto;padding-top:20px;border-top:1px solid var(--line)}
+  .rail-foot .assure{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+  .rail-foot .assure:last-child{margin-bottom:0}
+  .rail-foot .assure svg{flex:0 0 auto;margin-top:2px;color:var(--positive)}
+  .rail-foot .assure span{font-size:11.5px;line-height:1.5;color:var(--muted)}
+}
+
+.stage{display:flex;flex-direction:column;min-height:100dvh;min-width:0}
+
+.topbar{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:calc(env(safe-area-inset-top,0px) + 13px) 18px 13px;
+  background:color-mix(in srgb,var(--bg) 90%,transparent);
+  backdrop-filter:blur(12px) saturate(1.2);-webkit-backdrop-filter:blur(12px) saturate(1.2);
+}
+@media (min-width:1024px){ .topbar{position:static;padding:0;height:0;overflow:hidden} }
+
+.brand{display:flex;align-items:center;gap:8px}
+.brand img{width:27px;height:27px;border-radius:50%;object-fit:contain;display:block;box-shadow:0 0 0 1px var(--line)}
+.brand b{font-size:15.5px;font-weight:700;letter-spacing:-.025em}
+.counter{display:flex;align-items:baseline;gap:3px;font:500 11px/1 var(--mono);letter-spacing:.06em;color:var(--faint);font-variant-numeric:tabular-nums}
+.counter .cur{color:var(--ink);font-weight:500}
+
+.progress{position:relative;height:2px;background:var(--line);overflow:hidden;flex:0 0 auto}
+.progress i{position:absolute;inset:0 auto 0 0;width:0;background:var(--ink);transition:width .6s var(--ease-spring)}
+
+.viewport{flex:1 1 auto;display:flex;align-items:flex-start;justify-content:center;padding:clamp(20px,5vw,34px) 18px 26px}
+@media (min-width:600px){ .viewport{padding:clamp(26px,5vw,42px) 28px 30px} }
+@media (min-width:1024px){ .viewport{align-items:center;padding:clamp(30px,4vh,52px) clamp(32px,4vw,60px)} }
+
+.card{width:100%;max-width:520px}
+@media (min-width:1024px){
+  .card{
+    max-width:540px;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--r-lg);box-shadow:var(--shadow-card);padding:34px 36px 30px;
+  }
+}
+
+/* ============================================================================
+   CONTENT
+   ========================================================================== */
+.eyebrow{display:flex;align-items:center;gap:9px;margin:0 0 14px;font:500 10px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+
+.h{margin:0 0 8px;font-size:clamp(25px,6.2vw,32px);font-weight:700;line-height:1.14;letter-spacing:-.032em;color:var(--ink);text-wrap:balance}
+@media (min-width:1024px){ .h{font-size:clamp(27px,2vw,33px)} }
+.sub{margin:0 0 24px;font-size:14.5px;line-height:1.6;font-weight:400;color:var(--muted);max-width:44ch;text-wrap:pretty}
+@media (min-width:1024px){ .sub{font-size:15px;margin-bottom:26px} }
+
+.fields{display:flex;flex-direction:column;gap:16px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.field{min-width:0}
+
+.row{display:grid;gap:12px;grid-template-columns:1fr}
+@media (min-width:420px){ .row.two{grid-template-columns:1fr 1fr} }
+
+.lbl{display:flex;align-items:center;gap:6px;margin-bottom:7px;font-size:11px;font-weight:600;letter-spacing:.055em;text-transform:uppercase;color:var(--ink-2)}
+.lbl .optional{font-weight:500;letter-spacing:.04em;text-transform:none;color:var(--faint);font-size:11px}
+
+.wrap{position:relative;display:flex;align-items:center}
+.inp{
+  width:100%;height:52px;padding:0 14px;
+  border:1px solid var(--line-2);border-radius:var(--r);
+  background:var(--field);color:var(--ink);
+  font-family:var(--font);font-size:16px;font-weight:500;line-height:1;letter-spacing:-.005em;
+  transition:border-color .18s var(--ease-io),box-shadow .2s var(--ease-io),background .18s;
+  appearance:none;-webkit-appearance:none;min-width:0;
+}
+.inp::placeholder{color:var(--faint);font-weight:400}
+.inp:hover{border-color:rgba(12,15,20,.26)}
+.inp:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(12,15,20,.09)}
+.inp.has-error{border-color:var(--error);background:var(--error-wash)}
+.inp.has-error:focus{box-shadow:0 0 0 3px rgba(180,35,24,.12)}
+
+.prefix{position:absolute;left:14px;font-size:16px;font-weight:500;color:var(--muted);pointer-events:none;user-select:none}
+.wrap.has-prefix .inp{padding-left:39px}
+
+.hint{margin:6px 0 0;font-size:11.5px;line-height:1.5;color:var(--faint)}
+.hint b{color:var(--ink-2);font-weight:600}
+
+.err{display:flex;align-items:flex-start;gap:5px;margin:6px 0 0;font-size:12.5px;line-height:1.4;font-weight:500;color:var(--error);animation:errIn .25s var(--ease-spring) both}
+.err svg{flex:0 0 auto;margin-top:1px}
+@keyframes errIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
+
+/* option cards */
+.opts{display:flex;flex-direction:column;gap:8px}
+.opts.grid2{display:grid;grid-template-columns:1fr;gap:8px}
+@media (min-width:460px){ .opts.grid2{grid-template-columns:1fr 1fr} }
+.opt{position:relative;display:block;cursor:pointer}
+.opt input{position:absolute;opacity:0;width:1px;height:1px}
+.opt-box{
+  display:flex;align-items:center;gap:11px;min-height:56px;padding:12px 13px;
+  border:1px solid var(--line-2);border-radius:var(--r);background:var(--field);color:var(--ink);
+  transition:background .2s var(--ease-io),border-color .2s var(--ease-io),color .2s var(--ease-io),transform .16s var(--ease-spring),box-shadow .2s;
+}
+.opt:hover .opt-box{border-color:rgba(12,15,20,.28)}
+.opt:active .opt-box{transform:scale(.99)}
+.opt-txt{flex:1;min-width:0}
+.opt-title{display:block;font-size:14.5px;font-weight:600;letter-spacing:-.012em}
+.opt-sub{display:block;margin-top:1px;font-size:12.5px;font-weight:400;color:var(--muted);transition:color .2s}
+.tick{
+  flex:0 0 auto;width:19px;height:19px;border-radius:50%;border:1.5px solid var(--line-2);
+  display:grid;place-items:center;order:2;transition:background .2s,border-color .2s;
+}
+.tick svg{width:9px;height:9px;opacity:0;transform:scale(.4);transition:opacity .16s,transform .26s var(--ease-pop)}
+.opt input:checked + .opt-box{background:var(--ink);border-color:var(--ink);color:var(--surface);box-shadow:var(--shadow-btn)}
+.opt input:checked + .opt-box .opt-sub{color:rgba(255,255,255,.6)}
+.opt input:checked + .opt-box .tick{background:var(--surface);border-color:var(--surface)}
+.opt input:checked + .opt-box .tick svg{opacity:1;transform:none;color:var(--ink)}
+.opt input:focus-visible + .opt-box{outline:2px solid var(--ink);outline-offset:2px}
+.opt-box.is-error{border-color:var(--error);background:var(--error-wash)}
+
+/* availability tier pill */
+.tier{
+  flex:0 0 auto;order:1;
+  padding:3px 7px;border-radius:5px;
+  border:1px solid rgba(11,122,87,.24);background:var(--positive-wash);
+  font:500 9px/1.3 var(--mono);letter-spacing:.04em;text-transform:uppercase;
+  color:var(--positive);white-space:nowrap;
+}
+.opt input:checked + .opt-box .tier{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.24);color:#fff;
+}
+@media (max-width:400px){
+  .tier{font-size:8px;padding:2px 5px}
+}
+
+/* contact-method reply chip */
+.eta{
+  flex:0 0 auto;order:1;
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 7px;border-radius:999px;
+  border:1px solid var(--line-2);background:var(--surface-2);
+  font:500 9.5px/1 var(--mono);letter-spacing:.02em;
+  color:var(--muted);white-space:nowrap;
+  transition:background .2s,border-color .2s,color .2s;
+}
+.eta i{width:4px;height:4px;border-radius:50%;background:var(--faint);transition:background .2s}
+.eta.hot{border-color:rgba(11,122,87,.28);background:var(--positive-wash);color:var(--positive)}
+.eta.hot i{background:var(--positive)}
+.opt input:checked + .opt-box .eta{
+  background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.22);color:rgba(255,255,255,.92);
+}
+.opt input:checked + .opt-box .eta i{background:rgba(255,255,255,.85)}
+
+/* WhatsApp quick-start — appears only when WhatsApp is the chosen channel */
+.wa-cta{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .42s var(--ease-spring),opacity .26s}
+.wa-cta.open{grid-template-rows:1fr;opacity:1}
+.wa-cta > div{overflow:hidden;min-height:0}
+.wa-cta .pad{padding-top:11px}
+
+.wa-btn{
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  width:100%;min-height:52px;padding:0 16px;
+  border:0;border-radius:var(--r);
+  background:var(--positive);color:#fff;
+  font-family:var(--font);font-size:14px;font-weight:700;letter-spacing:-.01em;
+  cursor:pointer;text-decoration:none;
+  box-shadow:0 1px 2px rgba(11,122,87,.2),0 10px 22px -14px rgba(11,122,87,.7);
+  transition:transform .18s var(--ease-spring),background .2s,box-shadow .2s;
+}
+.wa-btn:hover{background:#0A6B4C;transform:translateY(-1px)}
+.wa-btn:active{transform:translateY(0) scale(.99)}
+.wa-btn:focus-visible{outline:2px solid var(--ink);outline-offset:2.5px}
+.wa-btn svg{flex:0 0 auto}
+
+.wa-hint{display:flex;align-items:flex-start;gap:6px;margin:8px 0 0;padding:0 2px;font-size:11.5px;line-height:1.5;color:var(--faint)}
+.wa-hint svg{flex:0 0 auto;margin-top:1px}
+.wa-hint b{color:var(--ink-2);font-weight:600}
+
+/* conditional telegram handle */
+.reveal{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .42s var(--ease-spring),opacity .26s}
+.reveal.open{grid-template-rows:1fr;opacity:1}
+.reveal > div{overflow:hidden;min-height:0}
+.reveal .pad{padding-top:10px}
+
+/* consent */
+.consent{display:flex;align-items:flex-start;gap:11px;margin-top:18px;cursor:pointer}
+.consent input{position:absolute;opacity:0;width:1px;height:1px}
+.cbox{
+  flex:0 0 auto;width:20px;height:20px;margin-top:1px;border:1.5px solid var(--line-2);
+  border-radius:6px;background:var(--field);display:grid;place-items:center;
+  transition:background .2s,border-color .2s,transform .16s var(--ease-spring);
+}
+.cbox svg{width:10px;height:10px;opacity:0;transform:scale(.5);transition:opacity .16s,transform .26s var(--ease-pop)}
+.consent input:checked + .cbox{background:var(--ink);border-color:var(--ink)}
+.consent input:checked + .cbox svg{opacity:1;transform:none;color:var(--surface)}
+.consent input:focus-visible + .cbox{outline:2px solid var(--ink);outline-offset:2px}
+.consent-txt{font-size:12.5px;line-height:1.55;color:var(--muted)}
+.consent-txt a{color:var(--ink);font-weight:500;text-underline-offset:2px;text-decoration-color:var(--line-2)}
+
+/* notes */
+.note{display:flex;align-items:flex-start;gap:7px;margin-top:16px;font-size:11.5px;line-height:1.5;color:var(--faint)}
+.note svg{flex:0 0 auto;margin-top:1px}
+
+/* credit disclosure */
+.credit-note{margin-top:14px;padding:12px 13px;border:1px solid var(--line);border-left:2.5px solid var(--positive);border-radius:0 var(--r) var(--r) 0;background:var(--surface-2)}
+.credit-note .cn-head{display:flex;align-items:center;gap:7px;margin-bottom:5px;font-size:12.5px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.credit-note .cn-head svg{flex:0 0 auto;color:var(--positive)}
+.credit-note p{margin:0;font-size:11.5px;line-height:1.55;color:var(--muted)}
+
+/* ============================================================================
+   COVER
+   ========================================================================== */
+.cover-points{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.cover-points li{display:flex;align-items:flex-start;gap:10px;font-size:13.5px;line-height:1.55;color:var(--muted)}
+.cover-points b{color:var(--ink);font-weight:700}
+.cov-ico{flex:0 0 auto;width:19px;height:19px;margin-top:1px;border-radius:50%;background:var(--wash-2);display:grid;place-items:center;color:var(--ink)}
+.cov-ico svg{width:10px;height:10px}
+.cover-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:22px;padding-top:17px;border-top:1px solid var(--line)}
+.cover-meta .k{display:block;font:500 8.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:5px}
+.cover-meta .v{display:block;font-size:12.5px;font-weight:600;color:var(--ink-2);letter-spacing:-.01em}
+
+/* ============================================================================
+   AVAILABILITY
+   ========================================================================== */
+.time-row{display:grid;grid-template-columns:1fr auto 1fr;gap:9px;align-items:center}
+.time-row .to{font-size:12px;color:var(--faint);font-family:var(--mono)}
+.sel{
+  width:100%;height:52px;padding:0 34px 0 13px;
+  border:1px solid var(--line-2);border-radius:var(--r);background:var(--field);color:var(--ink);
+  font-family:var(--font);font-size:16px;font-weight:500;
+  appearance:none;-webkit-appearance:none;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23626C7A' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;
+  transition:border-color .18s,box-shadow .2s;
+}
+.sel:hover{border-color:rgba(12,15,20,.26)}
+.sel:focus{outline:none;border-color:var(--ink);box-shadow:0 0 0 3px rgba(12,15,20,.09)}
+
+.tz-row{
+  display:flex;align-items:center;gap:10px;
+  min-height:52px;padding:10px 13px;
+  border:1px solid var(--line);border-radius:var(--r);
+  background:var(--surface-2);
+}
+.tz-row .tz-ico{flex:0 0 auto;color:var(--muted)}
+.tz-row .tz-body{flex:1;min-width:0}
+.tz-row .tz-name{display:block;font-size:14px;font-weight:600;letter-spacing:-.01em;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tz-row .tz-sub{display:block;font-size:11.5px;color:var(--faint);margin-top:1px}
+.tz-row .tz-edit{
+  flex:0 0 auto;border:0;background:none;cursor:pointer;
+  font-family:var(--font);font-size:12.5px;font-weight:600;color:var(--ink-2);
+  padding:7px 8px;border-radius:7px;
+}
+.tz-row .tz-edit:hover{background:var(--wash-2);color:var(--ink)}
+.tz-row .tz-edit:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+
+.commit{
+  margin-top:18px;padding:13px 14px;border-radius:var(--r);
+  background:var(--wash);border:1px solid var(--line);
+  font-size:12.5px;line-height:1.6;color:var(--muted);
+}
+.commit b{color:var(--ink);font-weight:700}
+
+/* ============================================================================
+   WHAT MAYA WILL ASK FOR
+   ========================================================================== */
+.ask{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:0}
+.ask li{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:15px 0;
+  border-bottom:1px solid var(--line);
+}
+.ask li:first-child{padding-top:0}
+.ask li:last-child{border-bottom:0;padding-bottom:0}
+.ask .n{
+  flex:0 0 auto;width:22px;height:22px;margin-top:1px;border-radius:50%;
+  background:var(--ink);color:var(--surface);
+  display:grid;place-items:center;
+  font:500 10.5px/1 var(--mono);
+}
+.ask .body{flex:1;min-width:0}
+.ask .t{display:block;font-size:14.5px;font-weight:700;letter-spacing:-.015em;color:var(--ink)}
+.ask .q{display:block;margin-top:3px;font-size:13px;line-height:1.55;color:var(--muted)}
+.ask .q em{font-style:normal;color:var(--ink-2);font-weight:500}
+.ask .w{display:block;margin-top:7px;font-size:11.5px;line-height:1.55;color:var(--faint)}
+.ask .w b{color:var(--ink-2);font-weight:600}
+
+.tip{
+  display:flex;align-items:flex-start;gap:8px;margin-top:16px;
+  padding:11px 12px;border-radius:var(--r);background:var(--wash);
+  font-size:11.5px;line-height:1.55;color:var(--muted);
+}
+.tip svg{flex:0 0 auto;margin-top:1px;color:var(--ink-2)}
+.tip b{color:var(--ink);font-weight:600}
+
+/* ============================================================================
+   NAV
+   ========================================================================== */
+.nav{
+  position:sticky;bottom:0;z-index:30;display:flex;align-items:center;gap:9px;
+  padding:12px 18px calc(env(safe-area-inset-bottom,0px) + 14px);
+  background:linear-gradient(to top,var(--bg) 55%,color-mix(in srgb,var(--bg) 0%,transparent));
+}
+@media (min-width:600px){ .nav{position:static;max-width:520px;width:100%;margin:0 auto;padding:16px 0 34px;background:none} }
+@media (min-width:1024px){ .nav{position:static;max-width:540px;width:100%;margin:0 auto;padding:18px 36px 38px;background:none} }
+
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:52px;padding:0 20px;border:0;border-radius:var(--r);cursor:pointer;
+  font-family:var(--font);font-size:14.5px;font-weight:700;letter-spacing:-.012em;
+  transition:transform .18s var(--ease-spring),background .2s,color .2s,box-shadow .2s,opacity .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2.5px}
+.btn-primary{flex:1 1 auto;max-width:100%;background:var(--ink);color:var(--surface);box-shadow:var(--shadow-btn)}
+.btn-primary:hover{background:#1A1F27;transform:translateY(-1px)}
+.btn-primary:active{transform:translateY(0) scale(.988)}
+.btn-primary .arrow{transition:transform .26s var(--ease-spring);flex:0 0 auto}
+.btn-primary:hover .arrow{transform:translateX(2px)}
+.btn-primary[disabled]{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{flex:0 0 auto;padding:0 14px;background:transparent;color:var(--muted)}
+.btn-ghost:hover{color:var(--ink);background:var(--wash)}
+.btn-ghost .chev{transition:transform .26s var(--ease-spring)}
+.btn-ghost:hover .chev{transform:translateX(-2px)}
+
+/* ============================================================================
+   MOTION
+   ========================================================================== */
+.step{display:none}
+.step.active{display:block}
+.stag{animation:stagIn .58s var(--ease-spring) both;animation-delay:calc(var(--i,0) * 50ms)}
+@keyframes stagIn{from{opacity:0;transform:translate3d(0,12px,0)}to{opacity:1;transform:none}}
+.step.active.dir-fwd .stag{animation-name:staggerF}
+.step.active.dir-back .stag{animation-name:staggerB}
+@keyframes staggerF{from{opacity:0;transform:translate3d(11px,9px,0)}to{opacity:1;transform:none}}
+@keyframes staggerB{from{opacity:0;transform:translate3d(-11px,9px,0)}to{opacity:1;transform:none}}
+@keyframes nudge{25%{transform:translateX(-3px)}60%{transform:translateX(2px)}100%{transform:none}}
+.nudge{animation:nudge .2s var(--ease-io)}
+
+/* ============================================================================
+   SEND + DONE
+   ========================================================================== */
+.send{
+  position:fixed;inset:0;z-index:95;background:var(--ink);color:var(--surface);
+  display:grid;place-items:center;clip-path:circle(0% at 50% 104%);
+  transition:clip-path .46s var(--ease-spring);pointer-events:none;
+}
+.send.on{clip-path:circle(170% at 50% 104%);pointer-events:auto}
+.send-in{display:flex;flex-direction:column;align-items:center;gap:18px;transform:translateY(8px);opacity:0;transition:transform .34s var(--ease-spring) .1s,opacity .3s .1s}
+.send.on .send-in{transform:none;opacity:1}
+.send-label{font:500 10px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.55);transition:opacity .2s}
+
+/* the mark: ring settles, tick draws, no endless spin */
+.ring{position:relative;width:84px;height:84px;display:grid;place-items:center}
+.ring > span{position:absolute;inset:0;border-radius:50%;border:1px solid rgba(255,255,255,.18);transform:scale(.72);opacity:0;animation:ringIn .9s var(--ease-spring) forwards}
+.ring > span:nth-child(2){animation-delay:.12s}
+.ring > span:nth-child(3){animation-delay:.24s}
+@keyframes ringIn{
+  0%{transform:scale(.72);opacity:.55}
+  70%{opacity:.18}
+  100%{transform:scale(1.34);opacity:0}
+}
+.ring .core{
+  position:relative;width:52px;height:52px;border-radius:50%;background:var(--surface);
+  display:grid;place-items:center;transform:scale(.9);animation:coreIn .4s var(--ease-pop) .05s forwards;
+}
+@keyframes coreIn{to{transform:scale(1)}}
+.ring .core svg{width:23px;height:23px;color:var(--ink)}
+.ring .core path{stroke-dasharray:30;stroke-dashoffset:30;animation:draw .32s var(--ease-io) .2s forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+
+.done{text-align:center;padding:clamp(14px,4vw,28px) 0 0}
+.done-mark{width:60px;height:60px;margin:0 auto 20px;border-radius:50%;background:var(--ink);color:var(--surface);display:grid;place-items:center;animation:popIn .5s var(--ease-pop) both}
+@keyframes popIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+.done-mark svg{width:27px;height:27px}
+.done-mark path{stroke-dasharray:30;stroke-dashoffset:30;animation:draw .4s var(--ease-io) .24s forwards}
+.done-badge{
+  display:inline-flex;align-items:center;gap:7px;margin-bottom:16px;padding:6px 11px;border-radius:999px;
+  border:1px solid rgba(11,122,87,.22);background:var(--positive-wash);
+  font:500 9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--positive);
+}
+.done-badge i{width:5px;height:5px;border-radius:50%;background:var(--positive)}
+.done .h{margin-bottom:10px}
+.done .sub{margin-left:auto;margin-right:auto;text-align:center}
+.next-steps{list-style:none;margin:22px 0 0;padding:0;text-align:left;display:flex;flex-direction:column;gap:16px;counter-reset:none}
+.next-steps li{display:flex;align-items:flex-start;gap:11px;font-size:12.5px;line-height:1.6;color:var(--muted)}
+.next-steps .ns-n{
+  flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:var(--wash-2);
+  display:grid;place-items:center;font:500 10px/1 var(--mono);color:var(--ink-2);margin-top:1px;
+}
+.next-steps b{color:var(--ink);font-weight:600}
+.done-cta{margin-top:24px;display:flex;justify-content:center}
+.done-cta .btn{max-width:none}
+
+/* ============================================================================
+   LEGAL MODAL
+   ========================================================================== */
+.linkish{
+  border:0;background:none;padding:0;margin:0;cursor:pointer;
+  font:inherit;color:var(--ink);font-weight:500;
+  text-decoration:underline;text-underline-offset:2px;text-decoration-color:var(--line-2);
+}
+.linkish:hover{text-decoration-color:var(--ink)}
+.linkish:focus-visible{outline:2px solid var(--ink);outline-offset:2px;border-radius:3px}
+
+.modal{
+  position:fixed;inset:0;z-index:120;
+  display:flex;align-items:flex-end;justify-content:center;
+  background:rgba(12,15,20,.42);
+  backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+  opacity:0;visibility:hidden;pointer-events:none;
+  transition:opacity .24s var(--ease-io),visibility 0s linear .24s;
+}
+.modal.open{opacity:1;visibility:visible;pointer-events:auto;transition:opacity .24s var(--ease-io),visibility 0s}
+@media (min-width:640px){ .modal{align-items:center} }
+
+.modal-panel{
+  width:100%;max-width:560px;max-height:86dvh;
+  display:flex;flex-direction:column;
+  background:var(--surface);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+  border-top:1px solid var(--line);
+  transform:translateY(18px);
+  transition:transform .32s var(--ease-spring);
+}
+.modal.open .modal-panel{transform:none}
+@media (min-width:640px){
+  .modal-panel{border-radius:var(--r-lg);border:1px solid var(--line);max-height:78dvh;box-shadow:0 30px 70px -34px rgba(12,15,20,.55)}
+}
+
+.modal-head{
+  display:flex;align-items:center;gap:12px;
+  padding:16px 18px 13px;border-bottom:1px solid var(--line);
+}
+.modal-title{margin:0;font-size:16px;font-weight:700;letter-spacing:-.02em;flex:1}
+.modal-close{
+  flex:0 0 auto;width:32px;height:32px;border-radius:8px;border:0;background:none;
+  display:grid;place-items:center;color:var(--muted);cursor:pointer;
+}
+.modal-close:hover{background:var(--wash);color:var(--ink)}
+.modal-close:focus-visible{outline:2px solid var(--ink);outline-offset:1px}
+
+.modal-body{
+  padding:18px;overflow-y:auto;overscroll-behavior:contain;flex:1;
+  font-size:13px;line-height:1.65;color:var(--muted);
+}
+.modal-body h4{margin:16px 0 6px;font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.modal-body h4:first-child{margin-top:0}
+.modal-body p{margin:0 0 10px}
+.modal-body ul{margin:0 0 12px;padding-left:17px}
+.modal-body li{margin-bottom:5px}
+.modal-body strong{color:var(--ink-2);font-weight:600}
+.modal-body .draft{
+  display:inline-block;margin-bottom:14px;padding:4px 8px;border-radius:5px;
+  background:var(--error-wash);border:1px solid rgba(180,35,24,.2);
+  font:500 9.5px/1.3 var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--error);
+}
+
+.modal-foot{
+  display:flex;justify-content:flex-end;gap:10px;
+  padding:13px 18px calc(env(safe-area-inset-bottom,0px) + 15px);
+  border-top:1px solid var(--line);
+}
+
+/* ============================================================================
+   REVIEW TOOLBAR
+   ========================================================================== */
+.tools{
+  position:fixed;z-index:70;left:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 84px);
+  display:flex;align-items:center;gap:2px;padding:3px;
+  background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:999px;
+  box-shadow:0 6px 20px -12px rgba(12,15,20,.35);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+}
+@media (min-width:1024px){ .tools{left:auto;right:20px;bottom:20px} }
+.tool-btn{
+  height:27px;padding:0 9px;border:0;border-radius:999px;background:none;
+  font:500 9.5px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;
+  color:var(--muted);cursor:pointer;transition:background .16s,color .16s;
+}
+.tool-btn:hover{color:var(--ink);background:var(--wash)}
+.tool-btn[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.tool-sep{width:1px;height:14px;background:var(--line-2);margin:0 1px}
+
+.notes{
+  position:fixed;z-index:71;left:10px;bottom:calc(env(safe-area-inset-bottom,0px) + 120px);
+  width:min(320px,calc(100vw - 20px));max-height:min(56dvh,440px);overflow-y:auto;
+  padding:15px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:0 22px 50px -28px rgba(12,15,20,.5);
+  font-size:12px;line-height:1.6;color:var(--muted);display:none;
+}
+@media (min-width:1024px){ .notes{left:auto;right:20px;bottom:56px} }
+.notes.open{display:block;animation:stagIn .26s var(--ease-spring) both}
+.notes h4{margin:0 0 9px;font:600 9.5px/1 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--ink)}
+.notes ul{margin:0;padding-left:14px}
+.notes li{margin-bottom:7px}
+.notes li:last-child{margin-bottom:0}
+.notes b{color:var(--ink-2);font-weight:700}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
+}
+html[data-motion="off"] *,html[data-motion="off"] *::before,html[data-motion="off"] *::after{
+  animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;
+}
+html[data-motion="off"] .send{clip-path:circle(160% at 50% 104%)}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="rail">
+    <div class="rail-brand">
+      <img src="logo.png" alt="">
+      <div><span class="w">Fynex</span><span class="t">Partner App</span></div>
+    </div>
+    <nav aria-label="Application steps"><ol class="rail-steps" id="railSteps"></ol></nav>
+    <div class="rail-foot">
+      <div class="assure">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>LLC formed in your name</span>
+      </div>
+      <div class="assure">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>You never pay us anything</span>
+      </div>
+      <div class="assure">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>No soft or hard credit check</span>
+      </div>
+    </div>
+  </aside>
+
+  <div class="stage">
+
+    <header class="topbar">
+      <div class="brand"><img src="logo.png" alt=""><b>Fynex</b></div>
+      <div class="counter" id="counter" aria-hidden="true">
+        <span class="cur">01</span><span>/</span><span class="tot">05</span>
+      </div>
+    </header>
+
+    <div class="progress" id="progress" role="progressbar" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" aria-label="Application progress">
+      <i></i>
+    </div>
+
+    <main class="viewport">
+      <div class="card" id="card">
+        <form id="form" novalidate autocomplete="on"></form>
+      </div>
+    </main>
+
+    <footer class="nav" id="nav">
+      <button type="button" class="btn btn-ghost" id="back" hidden>
+        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Back
+      </button>
+      <button type="button" class="btn btn-primary" id="next">
+        <span id="nextLabel">Continue</span>
+        <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </footer>
+
+  </div>
+</div>
+
+<div class="send" id="send" aria-hidden="true">
+  <div class="send-in">
+    <div class="ring">
+      <span></span><span></span><span></span>
+      <div class="core">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+    </div>
+    <span class="send-label" id="sendLabel">Submitting</span>
+  </div>
+</div>
+
+<!-- ==================== LEGAL MODAL ==================== -->
+<div class="modal" id="legalModal" role="dialog" aria-modal="true" aria-labelledby="legalTitle" aria-hidden="true" inert>
+  <div class="modal-panel">
+    <div class="modal-head">
+      <h3 class="modal-title" id="legalTitle">Terms</h3>
+      <button type="button" class="modal-close" id="legalClose" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="legalBody"></div>
+    <div class="modal-foot">
+      <button type="button" class="btn btn-primary" id="legalDone" style="height:46px;flex:0 0 auto;padding:0 22px">Close</button>
+    </div>
+  </div>
+</div>
+
+<div class="tools" role="group" aria-label="Mock review controls">
+  <button type="button" class="tool-btn" id="tMotion" aria-pressed="true" title="Toggle animation">Motion</button>
+  <button type="button" class="tool-btn" id="tNotes" aria-pressed="false" title="Design rationale">Notes</button>
+</div>
+
+<aside class="notes" id="notes">
+  <h4>v3 — what changed and why</h4>
+  <ul>
+    <li><b>No DOB, no street address.</b> Maya receives the OCR values in STATE (<code>state.py:243</code>) and can confirm/correct them in one turn (<code>resolve_name_mismatch</code>). A form field would be duplicate work.</li>
+    <li><b>No documents in the wizard.</b> They stay in chat. Screen 5 only <b>prepares</b> people — which is where the 35%→10% first-attempt rejection gain comes from.</li>
+    <li><b>Credit at step 3</b> with soft-pull copy. Below 650 continues to review — never an auto-reject (KB C-01).</li>
+    <li><b>Timezone needs no permission.</b> <code>Intl.DateTimeFormat().resolvedOptions().timeZone</code> — no prompt, no GPS. Falls back to a manual picker.</li>
+    <li><b>Contact channel is the LAST step.</b> <code>contact_pref</code> is required by <code>leads_sync.py:184</code> — a lead whose value is not <code>email|whatsapp|telegram</code> is <b>not routed for outreach at all</b>. It sits last because the choice decides what the final button can do: picking WhatsApp reveals "Message us now".</li>
+    <li><b>WhatsApp links to wa.me/13183147693</b> (KB FY-04, the only number on file — marked unverified in the KB). One constant; every link follows it.</li>
+    <li><b>Availability tiers.</b> Faster verification response moves the file along sooner and is reflected in the rate. Labels only — no figures, because no payment tier exists in the KB yet (FY-10 states a flat $1,000/month).</li>
+    <li><b>Availability is the job.</b> Speed + hours + timezone, read back as one concrete promise they can be held to.</li>
+    <li><b>Payment wording: "paid monthly"</b> plus "faster availability is reflected in your rate". No amount and no start date promised (T-04 says 3–5 weeks to first pay).</li>
+    <li><b>Mobile:</b> 16px inputs, 52px targets, safe-area insets, reduced-motion honoured.</li>
+  </ul>
+</aside>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================================
+   STATE
+   ========================================================================== */
+const S = {
+  legalName:"", email:"", mobile:"",
+  contactPref:"", telegramHandle:"",
+  creditBand:"", creditConsent:false,
+  availSpeed:"", availFrom:"09:00", availTo:"18:00",
+  timezone:"", tzDetected:"", tzManual:false,
+  readyAck:false
+};
+
+const CREDIT_BANDS = [
+  {v:"750+",      t:"750+",      s:"Excellent"},
+  {v:"700-749",   t:"700–749",   s:"Very good"},
+  {v:"600-699",   t:"600–699",   s:"Good"},
+  {v:"below-600", t:"Below 600", s:"Still building"}
+];
+
+const SPEEDS = [
+  {v:"1h",   t:"Within 1 hour",  s:"I'm usually near my phone",  tier:"Highest rate"},
+  {v:"day",  t:"Same day",       s:"I'll get to it that day",     tier:"Higher rate"},
+  {v:"24h",  t:"Within 24 hours", s:"Next day is fine",          tier:"Standard rate"}
+];
+
+/* Contact channel. `contact_pref` is REQUIRED by server/leads_sync.py:184 —
+   a lead whose value is not one of these three is not routed for outreach at all.
+   WhatsApp is listed first and carries the fastest reply chip. */
+const CHANNELS = [
+  {v:"whatsapp", t:"WhatsApp", s:"Fastest — usually within 30 min", eta:"15–30 min", hot:true},
+  {v:"telegram", t:"Telegram", s:"We reply in 1–2 hours",           eta:"1–2 hrs"},
+  {v:"email",    t:"Email",    s:"We reply within 24 hours",        eta:"24 hrs"}
+];
+
+const HOURS = (() => {
+  const out = [];
+  for (let h = 0; h < 24; h++){
+    const ap = h < 12 ? "AM" : "PM";
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    const v = String(h).padStart(2,"0") + ":00";
+    out.push({ v, t: h12 + ":00 " + ap });
+  }
+  return out;
+})();
+
+/* A short list of zones a US-based applicant might need. The detected value is
+   added to the top if it is not already present. No network call. */
+const ZONES = [
+  "America/New_York","America/Chicago","America/Denver","America/Phoenix",
+  "America/Los_Angeles","America/Anchorage","Pacific/Honolulu","America/Puerto_Rico"
+];
+
+/* ============================================================================
+   ICONS
+   ========================================================================== */
+const I_ALERT = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9.3"/><path d="M12 7.4v5.4M12 16.4v.1"/></svg>';
+const I_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const I_LOCK  = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="10.4" width="15.6" height="10.4" rx="2.4"/><path d="M8.2 10.4V7.6a3.8 3.8 0 0 1 7.6 0v2.8"/></svg>';
+const I_INFO  = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9.3"/><path d="M12 11v5.5M12 7.6v.1"/></svg>';
+const I_GLOBE = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><circle cx="12" cy="12" r="9.2"/><path d="M3 12h18M12 2.8c2.4 2.6 3.6 5.8 3.6 9.2s-1.2 6.6-3.6 9.2M12 2.8C9.6 5.4 8.4 8.6 8.4 12s1.2 6.6 3.6 9.2"/></svg>';
+const I_CARD  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2.4"/><path d="M2.5 9.6h19M6.4 14.4h3.4"/></svg>';
+const I_FACE  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9.2"/><path d="M8.5 14.4c.9 1.2 2.1 1.9 3.5 1.9s2.6-.7 3.5-1.9"/><path d="M9 9.6v.9M15 9.6v.9"/></svg>';
+const I_DOC   = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2.6H7a2 2 0 0 0-2 2v14.8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7.6z"/><path d="M14 2.6v5h5M8.6 13h6.8M8.6 17h4.6"/></svg>';
+const I_HOME  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.4 10.6 12 3.4l8.6 7.2"/><path d="M5.6 9.4V20a.9.9 0 0 0 .9.9h11a.9.9 0 0 0 .9-.9V9.4"/></svg>';
+
+/* ============================================================================
+   STEPS
+   ========================================================================== */
+const STEPS = [
+  { id:"cover",    label:"Welcome",       eyebrow:"Partner programme" },
+  { id:"details",  label:"Your details",  eyebrow:"01 / Details" },
+  { id:"credit",   label:"Credit",        eyebrow:"02 / Credit" },
+  { id:"part",     label:"Your part",     eyebrow:"03 / Availability" },
+  { id:"ready",    label:"Your documents",eyebrow:"04 / Documents" },
+  { id:"channel",  label:"Reach you",     eyebrow:"05 / Reach you" }
+];
+
+/* WhatsApp destination. KB FY-04 is the only number on file:
+   wa.me/13183147693 — recovered from the site bundle and marked unverified.
+   Change it here and every link follows. */
+const WHATSAPP_NUMBER = "13183147693";
+
+/* ============================================================================
+   ELEMENTS
+   ========================================================================== */
+let index = 0;
+
+const form     = document.getElementById('form');
+const card     = document.getElementById('card');
+const counter  = document.getElementById('counter');
+const progress = document.getElementById('progress');
+const railList = document.getElementById('railSteps');
+const backBtn  = document.getElementById('back');
+const nextBtn  = document.getElementById('next');
+const nextLbl  = document.getElementById('nextLabel');
+const sendEl   = document.getElementById('send');
+const navEl    = document.getElementById('nav');
+
+const live = document.createElement('div');
+live.className = 'sr-only';
+live.setAttribute('aria-live','polite');
+document.body.appendChild(live);
+
+const reduced = () =>
+  document.documentElement.dataset.motion === 'off' ||
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============================================================================
+   TIMEZONE — no permissions, no network
+   ========================================================================== */
+function detectZone(){
+  try {
+    const z = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (z && typeof z === "string") return z;
+  } catch (e) { /* ignore */ }
+  return "";
+}
+
+function zoneLabel(z){
+  if (!z) return "Not set";
+  // "America/New_York" -> "New York", keeping the region for disambiguation.
+  const [region, ...rest] = z.split("/");
+  const city = rest.join("/").replace(/_/g, " ");
+  if (!city) return region.replace(/_/g, " ");
+  // Multi-word regions like "America/Argentina/Buenos_Aires" keep the city only.
+  return city;
+}
+
+function zoneRegion(z){
+  if (!z || !z.includes("/")) return "";
+  return z.split("/")[0].replace(/_/g, " ");
+}
+
+function zoneOffset(z){
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone:z, timeZoneName:"shortOffset" }).formatToParts(new Date());
+    const t = parts.find(p => p.type === "timeZoneName");
+    return t ? t.value : "";
+  } catch (e) { return ""; }
+}
+
+/* ============================================================================
+   TEMPLATES
+   ========================================================================== */
+function fieldHTML(o){
+  const val = String(S[o.key] || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+  return `
+  <div class="field">
+    <label class="lbl" for="in-${o.key}">${o.label}${o.optional ? '<span class="optional">Optional</span>' : ''}</label>
+    <div class="wrap ${o.prefix ? 'has-prefix' : ''}">
+      ${o.prefix ? `<span class="prefix" aria-hidden="true">${o.prefix}</span>` : ''}
+      <input class="inp" id="in-${o.key}" name="${o.key}" type="${o.type || 'text'}"
+        ${o.inputmode ? `inputmode="${o.inputmode}"` : ''}
+        autocomplete="${o.autocomplete || 'off'}"
+        ${o.enterkeyhint ? `enterkeyhint="${o.enterkeyhint}"` : ''}
+        ${o.maxlength ? `maxlength="${o.maxlength}"` : ''}
+        ${o.capitalize ? `autocapitalize="${o.capitalize}"` : ''}
+        placeholder="${o.placeholder || ''}" value="${val}"
+        aria-describedby="err-${o.key}${o.hint ? ' hint-' + o.key : ''}">
+    </div>
+    ${o.hint ? `<p class="hint" id="hint-${o.key}">${o.hint}</p>` : ''}
+    <p class="err" id="err-${o.key}" hidden>${I_ALERT}<span></span></p>
+  </div>`;
+}
+
+function radioCards(name, items, cols){
+  return `
+  <div class="opts ${cols === 2 ? 'grid2' : ''}" role="radiogroup" aria-labelledby="lb-${name}">
+    ${items.map(it => `
+      <label class="opt">
+        <input type="radio" name="${name}" value="${it.v}" ${S[name] === it.v ? 'checked' : ''}>
+        <span class="opt-box">
+          <span class="opt-txt">
+            <span class="opt-title">${it.t}</span>
+            ${it.s ? `<span class="opt-sub">${it.s}</span>` : ''}
+          </span>
+          ${it.tier ? `<span class="tier">${it.tier}</span>` : ''}
+          <span class="tick" aria-hidden="true">${I_CHECK}</span>
+        </span>
+      </label>`).join('')}
+  </div>
+  <p class="err" id="err-${name}" hidden>${I_ALERT}<span></span></p>`;
+}
+
+function stepBody(def){
+  if (def.id === "cover"){
+    return `
+      <p class="eyebrow stag" style="--i:0">Partner programme</p>
+      <h2 class="h stag" style="--i:1" tabindex="-1" id="stepTitle">Become a Fynex partner</h2>
+      <p class="sub stag" style="--i:2">
+        We form a US LLC in your name and open its banking and payment processing.
+        Your part is small: stay reachable and complete short identity checks when they come up.
+      </p>
+
+      <ul class="cover-points stag" style="--i:3">
+        <li><span class="cov-ico">${I_CHECK}</span><span><b>The LLC is yours.</b> Formed in your legal name, and it stays yours.</span></li>
+        <li><span class="cov-ico">${I_CHECK}</span><span><b>You never pay.</b> No fee, no deposit, no outlay at any point.</span></li>
+        <li><span class="cov-ico">${I_CHECK}</span><span><b>No credit check.</b> We never run a soft or hard pull on your file.</span></li>
+        <li><span class="cov-ico">${I_CHECK}</span><span><b>Paid monthly.</b> Partnerships are paid a monthly fee once active — faster availability is reflected in your rate.</span></li>
+      </ul>
+
+      <div class="cover-meta stag" style="--i:4">
+        <div><span class="k">Format</span><span class="v">5 steps</span></div>
+        <div><span class="k">Rough time</span><span class="v">About 2 min</span></div>
+        <div><span class="k">Documents</span><span class="v">Later, in chat</span></div>
+      </div>`;
+  }
+
+  if (def.id === "details"){
+    return `
+      <p class="eyebrow stag" style="--i:0">${def.eyebrow}</p>
+      <h2 class="h stag" style="--i:1" tabindex="-1" id="stepTitle">Your legal details</h2>
+      <p class="sub stag" style="--i:2">
+        Your LLC is formed in this name, so use it exactly as it appears on your government ID.
+      </p>
+      <div class="fields stag" style="--i:3">
+        ${fieldHTML({key:"legalName", label:"Full legal name", placeholder:"Jordan A. Vale", autocomplete:"name", enterkeyhint:"next", capitalize:"words"})}
+        ${fieldHTML({key:"email", label:"Email address", type:"email", inputmode:"email", autocomplete:"email", placeholder:"you@example.com", enterkeyhint:"next"})}
+        ${fieldHTML({key:"mobile", label:"Mobile number", type:"tel", inputmode:"tel", autocomplete:"tel-national", prefix:"+1", placeholder:"(555) 000-0000", maxlength:"14", enterkeyhint:"done",
+          hint:"Verification links arrive here, so use a number you check daily."})}
+
+        <p class="note">${I_LOCK} Used only for this application. Never sold or shared.</p>
+      </div>`;
+  }
+
+  if (def.id === "channel"){
+    return `
+      <p class="eyebrow stag" style="--i:0">${def.eyebrow}</p>
+      <h2 class="h stag" style="--i:1" tabindex="-1" id="stepTitle">Where should we reach you?</h2>
+      <p class="sub stag" style="--i:2">
+        Last one. Maya runs your onboarding conversation: she explains the arrangement, then
+        asks for your documents one at a time. Pick the place you actually check.
+      </p>
+
+      <div class="fields stag" style="--i:3">
+        <div class="field">
+          <span class="lbl" id="lb-contactPref">Preferred contact method</span>
+          <div class="opts" role="radiogroup" aria-labelledby="lb-contactPref">
+            ${CHANNELS.map(c => `
+              <label class="opt method">
+                <input type="radio" name="contactPref" value="${c.v}" ${S.contactPref === c.v ? 'checked' : ''}>
+                <span class="opt-box">
+                  <span class="opt-txt">
+                    <span class="opt-title">${c.t}</span>
+                    <span class="opt-sub">${c.s}</span>
+                  </span>
+                  <span class="eta ${c.hot ? 'hot' : ''}" aria-hidden="true"><i></i>${c.eta}</span>
+                  <span class="tick" aria-hidden="true">${I_CHECK}</span>
+                </span>
+              </label>`).join('')}
+          </div>
+
+          <div class="reveal ${S.contactPref === 'telegram' ? 'open' : ''}" id="tgReveal">
+            <div><div class="pad">
+              ${fieldHTML({key:"telegramHandle", label:"Telegram username", placeholder:"@yourhandle", autocomplete:"off", enterkeyhint:"done", capitalize:"none"})}
+            </div></div>
+          </div>
+
+          <p class="err" id="err-contactPref" hidden>${I_ALERT}<span></span></p>
+        </div>
+
+        <p class="note">${I_LOCK} You can switch channel at any point — nothing here locks you in.</p>
+      </div>`;
+  }
+
+  if (def.id === "credit"){
+    return `
+      <p class="eyebrow stag" style="--i:0">${def.eyebrow}</p>
+      <h2 class="h stag" style="--i:1" tabindex="-1" id="stepTitle">A rough idea of your credit</h2>
+      <p class="sub stag" style="--i:2">
+        This is only used to work out whether we can open a processing account for you.
+        Checking your own score costs you nothing.
+      </p>
+      <div class="fields stag" style="--i:3">
+        <div class="field">
+          <span class="lbl" id="lb-creditBand">Approximate credit score</span>
+          ${radioCards("creditBand", CREDIT_BANDS, 2)}
+        </div>
+        <div class="credit-note">
+          <div class="cn-head">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+            No soft or hard credit check
+          </div>
+          <p>We never pull your credit report. Looking up your own score is a soft inquiry and does
+             not affect it. Below 650 does not mean no — it goes to a review of your banking options instead.</p>
+        </div>
+        <label class="consent" id="consentWrap">
+          <input type="checkbox" name="creditConsent" id="creditConsent" ${S.creditConsent ? 'checked' : ''}>
+          <span class="cbox" aria-hidden="true">${I_CHECK}</span>
+          <span class="consent-txt">
+            I understand this is my own estimate, not a check you are running, and that a
+            review may be needed depending on the range.
+          </span>
+        </label>
+        <p class="err" id="err-creditConsent" style="margin-left:31px" hidden>${I_ALERT}<span></span></p>
+      </div>`;
+  }
+
+  if (def.id === "part"){
+    const tz = S.timezone || "";
+    return `
+      <p class="eyebrow stag" style="--i:0">${def.eyebrow}</p>
+      <h2 class="h stag" style="--i:1" tabindex="-1" id="stepTitle">Your part: staying reachable</h2>
+      <p class="sub stag" style="--i:2">
+        Once your LLC exists, banks and processors will ask you to prove it is really you.
+        Those requests are usually a quick live selfie, and the links expire.
+        This is the only ongoing thing you do.
+      </p>
+
+      <div class="fields stag" style="--i:3">
+        <div class="field">
+          <span class="lbl" id="lb-availSpeed">How quickly can you respond?</span>
+          <p class="hint" style="margin:0 0 8px">
+            Faster availability moves your application along sooner — verifications are
+            what hold a file up — and it's reflected in your monthly rate.
+          </p>
+          ${radioCards("availSpeed", SPEEDS, 1)}
+          <p class="hint">
+            We contact candidates who can verify within an hour first. Choosing a slower
+            window is fine; it just means a longer wait between steps.
+          </p>
+        </div>
+
+        <div class="field">
+          <span class="lbl">When are you normally reachable?</span>
+          <div class="time-row">
+            <select class="sel" id="selFrom" aria-label="Available from"></select>
+            <span class="to" aria-hidden="true">to</span>
+            <select class="sel" id="selTo" aria-label="Available until"></select>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="lbl">Your timezone</span>
+          <div class="tz-row">
+            <span class="tz-ico" aria-hidden="true">${I_GLOBE}</span>
+            <span class="tz-body">
+              <span class="tz-name" id="tzName">${tz ? zoneLabel(tz) : 'Detecting…'}</span>
+              <span class="tz-sub" id="tzSub">
+                ${S.tzDetected && !S.tzManual ? 'Detected from your device · ' + (zoneOffset(tz) || '') : (S.tzManual ? 'Set by you' : '')}
+              </span>
+            </span>
+            <button type="button" class="tz-edit" id="tzEdit">Change</button>
+          </div>
+          <select class="sel" id="selTz" hidden aria-label="Choose your timezone" style="margin-top:9px"></select>
+          <p class="hint" id="tzHint" ${S.tzManual ? '' : 'hidden'}>
+            We ask you to confirm this because a detected zone can be wrong behind a VPN.
+          </p>
+        </div>
+      </div>
+
+      <div class="commit stag" style="--i:4" id="commitBox"></div>`;
+  }
+
+  if (def.id === "ready"){
+    return `
+      <p class="eyebrow stag" style="--i:0">${def.eyebrow}</p>
+      <h2 class="h stag" style="--i:1" tabindex="-1" id="stepTitle">What Maya will ask you for</h2>
+      <p class="sub stag" style="--i:2">
+        Nothing to upload here. Maya asks for these one at a time in chat, in this order.
+        Knowing what's coming is the difference between one clean photo and three retries.
+      </p>
+
+      <ul class="ask stag" style="--i:3">
+        <li>
+          <span class="n">1</span>
+          <span class="body">
+            <span class="t">Your driver's licence</span>
+            <span class="q">"Front and back of your license, all four corners showing, no glare."</span>
+            <span class="w">It must be unexpired. Maya reads the name, date of birth and address
+              off it, then asks you to <b>confirm they're right</b> — so you never retype them.</span>
+          </span>
+        </li>
+        <li>
+          <span class="n">2</span>
+          <span class="body">
+            <span class="t">A selfie holding that licence</span>
+            <span class="q">"Your face and the license in one photo. A headshot alone doesn't work."</span>
+            <span class="w">The licence shows who owns the LLC; the selfie proves the person
+              holding it is really you. Both are needed.</span>
+          </span>
+        </li>
+        <li>
+          <span class="n">3</span>
+          <span class="body">
+            <span class="t">Your last three months of bank statements</span>
+            <span class="q">"The last three months of statements, all pages. Any readable form
+              works, and online banks count the same."</span>
+            <span class="w">That means the three most recent <b>complete</b> months — the month
+              you're in now doesn't count yet. Chime, Cash App and similar are fine.</span>
+          </span>
+        </li>
+        <li>
+          <span class="n">4</span>
+          <span class="body">
+            <span class="t">Proof of address — probably already in the statements</span>
+            <span class="q">"That recent statement shows your name and current address, so it
+              covers the address proof too."</span>
+            <span class="w">You only need a separate bill or lease if none of your statements
+              shows your current address. Maya tells you which case you're in.</span>
+          </span>
+        </li>
+      </ul>
+
+      <div class="tip stag" style="--i:4">
+        ${I_INFO}
+        <span><b>The one thing that causes retakes:</b> in WhatsApp or Telegram, send documents as a
+        <b>file</b>, not as a photo. Chat apps shrink pictures, which is the usual reason an upload
+        comes back blurry. Email is never shrunk.</span>
+      </div>
+
+      <label class="consent stag" style="--i:5">
+        <input type="checkbox" name="readyAck" id="readyAck" ${S.readyAck ? 'checked' : ''}>
+        <span class="cbox" aria-hidden="true">${I_CHECK}</span>
+        <span class="consent-txt">
+          I have these available, and I agree to the
+          <button type="button" class="linkish" data-doc="terms">Terms</button> and
+          <button type="button" class="linkish" data-doc="privacy">Privacy Policy</button>.
+        </span>
+      </label>
+      <p class="err" id="err-readyAck" style="margin-left:31px" hidden>${I_ALERT}<span></span></p>`;
+  }
+
+  return '';
+}
+
+/* ============================================================================
+   RENDER
+   ========================================================================== */
+function render(dir){
+  const prevH = card.getBoundingClientRect().height;
+
+  form.innerHTML = STEPS.map((def, i) => `
+    <section class="step ${i === index ? 'active' : ''} ${dir === 'back' ? 'dir-back' : dir === 'fwd' ? 'dir-fwd' : ''}"
+             data-step="${def.id}" ${i === index ? '' : 'hidden'}>
+      ${stepBody(def)}
+    </section>`).join('');
+
+  syncChrome();
+  bind();
+
+  if (!reduced() && prevH > 40){
+    const nowH = card.getBoundingClientRect().height;
+    if (Math.abs(nowH - prevH) > 2){
+      card.style.height = prevH + 'px';
+      void card.offsetHeight;
+      card.style.transition = 'height .42s cubic-bezier(.16,1,.3,1)';
+      card.style.height = nowH + 'px';
+      window.setTimeout(() => { card.style.height = ''; card.style.transition = ''; }, 460);
+    }
+  }
+}
+
+function syncChrome(){
+  const total = STEPS.length;
+  const flowTotal = total - 1;                      // the cover is not a numbered step
+  const isCover = STEPS[index].id === "cover";
+  const flowPos = isCover ? 0 : index;              // 1-based within the real flow
+  const def = STEPS[index];
+
+  counter.querySelector('.cur').textContent = String(flowPos).padStart(2,'0');
+  counter.querySelector('.tot').textContent = String(flowTotal).padStart(2,'0');
+  counter.style.visibility = isCover ? 'hidden' : '';
+
+  const pct = isCover ? 0 : (flowPos / flowTotal) * 100;
+  progress.querySelector('i').style.width = pct + '%';
+  progress.setAttribute('aria-valuemin','0');
+  progress.setAttribute('aria-valuenow', String(flowPos));
+  progress.setAttribute('aria-valuemax', String(flowTotal));
+  progress.setAttribute('aria-valuetext', isCover ? 'Welcome screen' : `Step ${flowPos} of ${flowTotal}: ${def.label}`);
+
+  backBtn.hidden = index === 0;
+  nextLbl.textContent = def.id === "channel" ? 'Submit application'
+                     : index === 0 ? 'Start application'
+                     : 'Continue';
+
+  railList.innerHTML = STEPS.filter(d => d.id !== 'cover').map((d, i) => {
+    const flowIdx = i + 1;
+    const cur = index;
+    const st = flowIdx < cur ? 'done' : flowIdx === cur ? 'active' : 'todo';
+    return `<li data-state="${isCover ? 'todo' : st}">
+      <span class="dot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <span class="nm">${d.label}</span>
+    </li>`;
+  }).join('');
+}
+
+/* ============================================================================
+   BIND
+   ========================================================================== */
+function bind(){
+  const sc = form.querySelector('.step.active');
+  if (!sc) return;
+
+  // text inputs
+  sc.querySelectorAll('input.inp').forEach(el => {
+    el.addEventListener('input', () => {
+      let v = el.value;
+      if (el.name === 'mobile'){ v = formatPhone(v); el.value = v; }
+      S[el.name] = v;
+      if (el.classList.contains('has-error')) validate(el.name, sc);
+    });
+    el.addEventListener('blur', () => { if (S[el.name] !== undefined) validate(el.name, sc); });
+  });
+
+  // radios
+  sc.querySelectorAll('input[type="radio"]').forEach(r => {
+    r.addEventListener('change', () => {
+      S[r.name] = r.value;
+      clearErr(r.name, sc);
+      if (r.name === 'availSpeed') paintCommit(sc);
+      if (r.name === 'contactPref'){
+        const rev = sc.querySelector('#tgReveal');
+        if (rev){
+          const open = r.value === 'telegram';
+          rev.classList.toggle('open', open);
+          if (open) window.setTimeout(() => sc.querySelector('#in-telegramHandle')?.focus({preventScroll:true}), 220);
+        }
+      }
+    });
+  });
+
+  // checkboxes
+  const cc = sc.querySelector('#creditConsent');
+  if (cc) cc.addEventListener('change', () => { S.creditConsent = cc.checked; clearErr('creditConsent', sc); });
+  const ra = sc.querySelector('#readyAck');
+  if (ra) ra.addEventListener('change', () => { S.readyAck = ra.checked; clearErr('readyAck', sc); });
+
+  // hours + timezone
+  const from = sc.querySelector('#selFrom');
+  const to = sc.querySelector('#selTo');
+  if (from && to){
+    from.innerHTML = HOURS.map(h => `<option value="${h.v}" ${S.availFrom === h.v ? 'selected' : ''}>${h.t}</option>`).join('');
+    to.innerHTML = HOURS.map(h => `<option value="${h.v}" ${S.availTo === h.v ? 'selected' : ''}>${h.t}</option>`).join('');
+    from.addEventListener('change', () => { S.availFrom = from.value; paintCommit(sc); });
+    to.addEventListener('change', () => { S.availTo = to.value; paintCommit(sc); });
+  }
+
+  const edit = sc.querySelector('#tzEdit');
+  const selTz = sc.querySelector('#selTz');
+  if (edit && selTz){
+    const zones = (S.timezone && !ZONES.includes(S.timezone)) ? [S.timezone].concat(ZONES) : ZONES;
+    selTz.innerHTML = zones.map(z =>
+      `<option value="${z}" ${S.timezone === z ? 'selected' : ''}>${zoneLabel(z)}${zoneRegion(z) ? ' · ' + zoneRegion(z) : ''} ${zoneOffset(z)}</option>`
+    ).join('');
+    edit.addEventListener('click', () => {
+      const open = selTz.hidden;
+      selTz.hidden = !open;
+      sc.querySelector('#tzHint').hidden = !open;
+      if (open) selTz.focus();
+    });
+    selTz.addEventListener('change', () => {
+      S.timezone = selTz.value;
+      S.tzManual = true;
+      sc.querySelector('#tzName').textContent = zoneLabel(S.timezone);
+      sc.querySelector('#tzSub').textContent = 'Set by you';
+      paintCommit(sc);
+    });
+    paintCommit(sc);
+  }
+
+  // fill timezone on first paint if not set
+  if (STEPS[index].id === 'part' && !S.timezone){
+    S.timezone = S.tzDetected || detectZone();
+    if (S.timezone){
+      sc.querySelector('#tzName').textContent = zoneLabel(S.timezone);
+      sc.querySelector('#tzSub').textContent = 'Detected from your device · ' + (zoneOffset(S.timezone) || '');
+      const selTz2 = sc.querySelector('#selTz');
+      if (selTz2 && ![...selTz2.options].some(o => o.value === S.timezone)){
+        selTz2.insertAdjacentHTML('afterbegin', `<option value="${S.timezone}" selected>${zoneLabel(S.timezone)}${zoneRegion(S.timezone) ? ' · ' + zoneRegion(S.timezone) : ''} ${zoneOffset(S.timezone)}</option>`);
+      }
+      paintCommit(sc);
+    }
+  }
+}
+
+/* ============================================================================
+   WHATSAPP QUICK-START
+   ========================================================================== */
+const I_WA = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-.9-.3-.1-.5-.2-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.4z"/><path d="M12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.2L2 22l5-1.4c1.5.8 3.2 1.3 5 1.3 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.2c-1.6 0-3.2-.4-4.5-1.2l-.3-.2-3 .8.8-2.9-.2-.3C4 15 3.6 13.5 3.6 12 3.6 7.4 7.4 3.6 12 3.6S20.4 7.4 20.4 12 16.6 20.2 12 20.2z"/></svg>';
+const I_ARROW_S = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+
+function waMessage(){
+  const name  = S.legalName.trim();
+  const band  = (CREDIT_BANDS.find(b => b.v === S.creditBand) || {}).t || '';
+  const speed = { '1h':'within 1 hour', 'day':'same day', '24h':'within 24 hours' }[S.availSpeed] || '';
+  const hours = S.availFrom && S.availTo ? `${fmtHour(S.availFrom)}–${fmtHour(S.availTo)}` : '';
+  const off   = S.timezone ? zoneOffset(S.timezone) : '';
+
+  // Plain text, multi-line on purpose: a rep can read it, route it and open the
+  // file without asking a single follow-up question.
+  return [
+    `Hi Fynex — I've just submitted my partner application.`,
+    ``,
+    name || null,
+    S.email || null,
+    band ? `Credit band: ${band}` : null,
+    (speed || hours) ? `Availability: ${[speed, hours].filter(Boolean).join(', ')}${off ? ' ' + off : ''}` : null,
+    ``,
+    `I'm ready for the document steps whenever you are.`
+  ].filter(l => l !== null).join('\n').replace(/\n{3,}/g, '\n\n');
+}
+
+function waLink(){
+  return `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g,'')}?text=${encodeURIComponent(waMessage())}`;
+}
+
+function paintWa(sc){
+  /* The channel screen no longer carries its own WhatsApp button: the handoff
+     now lives on the done screen, where it is a real tap rather than an
+     auto-redirect (see submit() and WHATSAPP-HANDOFF-RESEARCH.md). Kept as a
+     no-op so older call sites stay safe. */
+}
+
+/* ============================================================================
+   LEGAL MODAL
+   ========================================================================== */
+const LEGAL = {
+  terms: {
+    title: 'Terms of Application',
+    html: `
+      <h4>1. What this application is</h4>
+      <p>This form is an <strong>application</strong>, not an agreement and not an offer of a partnership.
+         Submitting it does not create a contract, a partnership, an employment relationship, or any
+         obligation on our part. Every application is reviewed individually.</p>
+
+      <h4>2. What we do with your details</h4>
+      <p>You are applying for a role where a US LLC is formed in your legal name and its banking and
+         payment processing accounts are opened. To assess that, we collect your legal name, email,
+         mobile number, a credit score range, your stated availability, and — later, in conversation —
+         identity documents and bank statements.</p>
+      <p>Your details are used to assess this application and to run onboarding. They are
+         <strong>not sold, rented or shared</strong> with third parties for marketing.</p>
+
+      <h4>3. Credit</h4>
+      <p><strong>We do not run a soft or hard credit check.</strong> The range you select is your own
+         estimate and is used only to work out which banking options may be available to you.
+         A lower range is not an automatic refusal: it routes your application to a review of banking
+         options instead.</p>
+
+      <h4>4. What we ask of you</h4>
+      <ul>
+        <li>Provide accurate information, and only documents that are genuinely yours.</li>
+        <li>Respond to identity and verification requests within the availability window you chose.</li>
+        <li>Tell us promptly if anything changes.</li>
+      </ul>
+      <p>Verification requests from banks and processors are time-limited. Missing one does not end your
+         application, but it does delay it.</p>
+
+      <h4>5. What we never ask for</h4>
+      <p>We will never ask for your Social Security number in chat, your bank login, your card number,
+         a PIN, or any payment from you. <strong>There is no fee to apply and no fee to participate.</strong>
+         If anyone claiming to represent us asks for those things, stop and tell us.</p>
+
+      <h4>6. Accuracy and refusal</h4>
+      <p>We may decline or close an application where information is materially false, where documents
+         do not belong to the applicant, or where the arrangement cannot lawfully proceed.</p>
+
+      <h4>7. Eligibility</h4>
+      <p>You must be a US resident aged 21 or over, and legally able to enter into the arrangement
+         described to you during onboarding.</p>
+
+      <h4>8. Governing terms</h4>
+      <p>The written agreement, issued later in the process, sets out the actual terms of any
+         partnership. Where this application and that agreement differ, the agreement governs.</p>
+    `
+  },
+  privacy: {
+    title: 'Privacy Policy',
+    html: `
+      <h4>What we collect</h4>
+      <ul>
+        <li><strong>Application details:</strong> legal name, email, mobile number, credit range, availability window and timezone.</li>
+        <li><strong>Onboarding documents:</strong> government ID, a selfie holding it, bank statements and proof of address, collected in conversation after you apply.</li>
+        <li><strong>Technical data:</strong> approximate location derived from your connection, device and browser type, and which pages you reached.</li>
+      </ul>
+
+      <h4>Why we collect it</h4>
+      <p>To assess your application, to form the entity and open accounts where the application
+         proceeds, to meet identity-verification and anti-money-laundering obligations, and to keep
+         a record of what was agreed.</p>
+
+      <h4>Who sees it</h4>
+      <p>Our partnerships team, and the banks, payment processors and formation agents involved in
+         setting up your entity and accounts. We share only what those parties need for that purpose.
+         <strong>We do not sell your data.</strong></p>
+
+      <h4>How long we keep it</h4>
+      <p>For as long as your application or partnership is active, and afterwards for the period our
+         compliance obligations require. Identity records are typically retained for several years
+         after an account closes.</p>
+
+      <h4>Your choices</h4>
+      <ul>
+        <li>You can ask what we hold about you, and ask for corrections.</li>
+        <li>You can withdraw an application at any time before an entity is formed.</li>
+        <li>You can ask us to delete data we are not required to retain.</li>
+      </ul>
+
+      <h4>Cookies and tracking</h4>
+      <p>We use cookies and advertising pixels to measure which campaigns bring applicants, and to
+         understand where people stop in the form. These do not identify you by name to third parties.</p>
+
+      <h4>Never in chat</h4>
+      <p>We never ask for your Social Security number in chat, your bank login, card number or PIN.
+         If anyone claiming to represent us asks for those, stop and report it.</p>
+
+      <h4>Contact</h4>
+      <p>Questions about your data can go to the same address you applied to, or to the contact
+         details on your partner file.</p>
+    `
+  }
+};
+
+const legalModal = document.getElementById('legalModal');
+const legalTitle = document.getElementById('legalTitle');
+const legalBody  = document.getElementById('legalBody');
+let lastFocus = null;
+
+function openLegal(key){
+  const doc = LEGAL[key];
+  if (!doc) return;
+  lastFocus = document.activeElement;
+  legalTitle.textContent = doc.title;
+  legalBody.innerHTML = doc.html;
+  legalBody.scrollTop = 0;
+  legalModal.classList.add('open');
+  legalModal.setAttribute('aria-hidden','false');
+  legalModal.removeAttribute('inert');
+  document.body.style.overflow = 'hidden';
+  window.setTimeout(() => document.getElementById('legalClose').focus({preventScroll:true}), 80);
+}
+
+function closeLegal(){
+  legalModal.classList.remove('open');
+  legalModal.setAttribute('aria-hidden','true');
+  legalModal.setAttribute('inert','');
+  document.body.style.overflow = '';
+  if (lastFocus && lastFocus.focus) lastFocus.focus({preventScroll:true});
+}
+
+document.addEventListener('click', e => {
+  const trigger = e.target.closest('[data-doc]');
+  if (trigger){ e.preventDefault(); openLegal(trigger.dataset.doc); return; }
+  if (e.target === legalModal) closeLegal();
+});
+document.getElementById('legalClose').addEventListener('click', closeLegal);
+document.getElementById('legalDone').addEventListener('click', closeLegal);
+legalModal.addEventListener('keydown', e => {
+  if (e.key === 'Escape'){ e.preventDefault(); closeLegal(); return; }
+  if (e.key !== 'Tab') return;
+  const f = legalModal.querySelectorAll('button, [href], input, select, textarea');
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+
+/* ============================================================================
+   COMMITMENT READ-BACK
+   ========================================================================== */
+function fmtHour(v){
+  const [h] = v.split(':').map(Number);
+  const ap = h < 12 ? 'AM' : 'PM';
+  const h12 = h % 12 === 0 ? 12 : h % 12;
+  return h12 + ' ' + ap;
+}
+
+function paintCommit(sc){
+  const box = sc.querySelector('#commitBox');
+  if (!box) return;
+
+  const speedMap = { '1h':'within an hour', 'day':'the same day', '24h':'within 24 hours' };
+  const tierMap = { '1h':'the highest monthly rate', 'day':'a higher monthly rate', '24h':'the standard monthly rate' };
+  const speed = speedMap[S.availSpeed] || null;
+  const tier = tierMap[S.availSpeed] || null;
+  const zone = S.timezone || S.tzDetected;
+  const off = zone ? zoneOffset(zone) : '';
+  const hours = S.availFrom && S.availTo ? `${fmtHour(S.availFrom)}–${fmtHour(S.availTo)}` : null;
+
+  if (!speed && !hours){
+    box.innerHTML = `<span>Pick how quickly you can respond and we'll show you exactly what we'll hold you to.</span>`;
+    return;
+  }
+
+  const bits = [];
+  if (hours) bits.push(`between <b>${hours}</b>`);
+  if (off) bits.push(`your time (<b>${off}</b>)`);
+  const when = bits.length ? bits.join(' ') : 'during your normal hours';
+
+  box.innerHTML = speed
+    ? `Verification links expire, so we'll send them ${when} and you'll respond <b>${speed}</b>.
+       That places you on <b>${tier}</b>. Miss one and your timeline slips — that's the only
+       thing we need from you.`
+    : `We'll send verification links ${when}. Tell us above how fast you can answer them.`;
+}
+
+/* ============================================================================
+   VALIDATION
+   ========================================================================== */
+const EMAIL = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+
+function formatPhone(v){
+  const d = v.replace(/\D/g,'').slice(0,10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `(${d.slice(0,3)}) ${d.slice(3)}`;
+  return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+}
+
+function errFor(k){
+  switch (k){
+    case 'legalName': {
+      const n = S.legalName.trim();
+      if (!n) return 'Enter your full legal name';
+      return n.length >= 2 ? '' : 'Enter your full legal name';
+    }
+    case 'email':
+      if (!S.email.trim()) return 'Enter your email address';
+      return EMAIL.test(S.email.trim()) ? '' : "That email doesn't look right";
+    case 'mobile': {
+      const n = S.mobile.replace(/\D/g,'').length;
+      if (!n) return 'Enter your mobile number';
+      return n === 10 ? '' : 'Enter a 10-digit US number';
+    }
+    case 'contactPref': return S.contactPref ? '' : 'Choose where Maya should reach you';
+    case 'telegramHandle': {
+      if (S.contactPref !== 'telegram') return '';
+      const h = S.telegramHandle.trim().replace(/^@/, '');
+      if (!h) return 'Enter your Telegram username';
+      // Telegram itself requires 5–32 characters; anything shorter cannot resolve.
+      return /^[a-z0-9_]{5,32}$/i.test(h) ? '' : 'Use 5–32 letters, numbers or underscores';
+    }
+    case 'creditBand': return S.creditBand ? '' : 'Choose a range';
+    case 'creditConsent': return S.creditConsent ? '' : 'Please confirm to continue';
+    case 'availSpeed': return S.availSpeed ? '' : 'Choose how quickly you can respond';
+    case 'readyAck': return S.readyAck ? '' : 'Please confirm these are available';
+    default: return '';
+  }
+}
+
+function setErr(k, msg, sc){
+  const el = sc.querySelector(`#err-${k}`);
+  if (!el) return;
+  el.hidden = false;
+  el.querySelector('span').textContent = msg;
+  const input = sc.querySelector(`#in-${k}`);
+  if (input){ input.classList.add('has-error'); input.setAttribute('aria-invalid','true'); }
+  sc.querySelectorAll(`input[name="${k}"]`).forEach(r => {
+    r.setAttribute('aria-invalid','true');
+    const box = r.nextElementSibling;
+    if (box) box.classList.add('is-error');
+  });
+}
+
+function clearErr(k, sc){
+  const el = sc.querySelector(`#err-${k}`);
+  if (el) el.hidden = true;
+  const input = sc.querySelector(`#in-${k}`);
+  if (input){ input.classList.remove('has-error'); input.removeAttribute('aria-invalid'); }
+  sc.querySelectorAll(`input[name="${k}"]`).forEach(r => {
+    r.removeAttribute('aria-invalid');
+    const box = r.nextElementSibling;
+    if (box) box.classList.remove('is-error');
+  });
+}
+
+function validate(k, sc){
+  const msg = errFor(k);
+  if (msg) setErr(k, msg, sc); else clearErr(k, sc);
+  return !msg;
+}
+
+function validateStep(){
+  const id = STEPS[index].id;
+  const sc = form.querySelector('.step.active');
+  const need =
+    id === 'details' ? ['legalName','email','mobile'] :
+    id === 'channel' ? ['contactPref',
+                        ...(S.contactPref === 'telegram' ? ['telegramHandle'] : [])] :
+    id === 'credit'  ? ['creditBand','creditConsent'] :
+    id === 'part'    ? ['availSpeed'] :
+    id === 'ready'   ? ['readyAck'] :
+    [];
+
+  let bad = null;
+  need.forEach(k => { if (!validate(k, sc) && !bad) bad = k; });
+
+  if (bad){
+    const target = sc.querySelector(`#in-${bad}`) ||
+                   sc.querySelector(`input[name="${bad}"]`)?.closest('.opt');
+    if (target){
+      target.scrollIntoView({ block:'center', behavior: reduced() ? 'auto' : 'smooth' });
+      target.classList.remove('nudge'); void target.offsetWidth; target.classList.add('nudge');
+    }
+    const focusable = sc.querySelector(`#in-${bad}`) || sc.querySelector(`input[name="${bad}"]`);
+    if (focusable) focusable.focus({ preventScroll:true });
+    live.textContent = errFor(bad);
+    return false;
+  }
+  return true;
+}
+
+/* ============================================================================
+   NAV
+   ========================================================================== */
+function go(dir){
+  if (dir === 'fwd'){
+    if (!validateStep()) return;
+    if (index === STEPS.length - 1){ submit(); return; }
+  }
+  index = Math.max(0, Math.min(STEPS.length - 1, index + (dir === 'fwd' ? 1 : -1)));
+  render(dir);
+  if (window.scrollY > 0) window.scrollTo({ top:0, behavior: reduced() ? 'auto' : 'smooth' });
+  window.setTimeout(() => form.querySelector('#stepTitle')?.focus({ preventScroll:true }), 60);
+}
+
+backBtn.addEventListener('click', () => go('back'));
+nextBtn.addEventListener('click', () => go('fwd'));
+form.addEventListener('submit', e => { e.preventDefault(); go('fwd'); });
+
+form.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'radio' && e.target.type !== 'checkbox'){
+    e.preventDefault();
+    go('fwd');
+  }
+});
+
+/* ============================================================================
+   SUBMIT → DONE
+   ========================================================================== */
+function submit(){
+  /* RESEARCH RESULT — this deliberately does NOT auto-navigate.
+
+     Chrome's own docs: it "won't launch an external application" when "a
+     JavaScript timer tried to open an application without a user gesture", and
+     S.browser_fallback_url fires "as if the package weren't there".
+     On iOS a scripted navigation is "treated like typing the URL: no app".
+
+     So in a Facebook/TikTok webview — which is where ALL this traffic comes
+     from — a timer-driven redirect cannot reach WhatsApp. It lands on wa.me
+     *inside* the webview. The animation and the app handoff are incompatible.
+
+     The only thing that opens WhatsApp from a webview is a REAL TAP on a real
+     anchor. So: play the animation, then hand the user a button to tap. That
+     tap is the gesture every platform requires. */
+  nextBtn.disabled = true;
+  sendEl.classList.add('on');
+  sendEl.setAttribute('aria-hidden','false');
+  document.getElementById('sendLabel').textContent = 'Application received';
+
+  const r = reduced();
+  const hold = r ? 150 : 1150;
+
+  window.setTimeout(() => {
+    sendEl.classList.remove('on');
+    sendEl.setAttribute('aria-hidden','true');
+    showDone({});
+  }, hold);
+}
+
+/* --- environment detection ------------------------------------------------
+   This traffic comes from paid social, so the in-app browser is the norm,
+   not the edge case. Each app needs a different anchor, and iOS needs a
+   different story entirely. Detection is best-effort: every check falls
+   through to the safe default (plain wa.me) rather than breaking. */
+function env(){
+  const ua = navigator.userAgent || '';
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua) ||
+                (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1);
+  const app =
+    /FBAN|FBAV|FB_IAB/i.test(ua) ? 'facebook' :
+    /Instagram/i.test(ua)        ? 'instagram' :
+    /musical_ly|Bytedance|TikTok/i.test(ua) ? 'tiktok' :
+    /Messenger/i.test(ua)        ? 'messenger' :
+    null;
+  return { ua, isAndroid, isIOS, app, inApp: !!app };
+}
+
+/* Where the WhatsApp tap should go. The anchor is the handoff — it must be a
+   real href on a real <a>, never a scripted redirect. */
+function waTarget(){
+  const digits = WHATSAPP_NUMBER.replace(/\D/g,'');
+  const enc = encodeURIComponent(waMessage());
+  const web = `https://wa.me/${digits}?text=${enc}`;
+  const e = env();
+
+  if (e.isAndroid){
+    /* Android webviews drop https links into themselves, so the intent is the
+       only way out. browser_fallback_url covers WhatsApp being absent. */
+    const fb = encodeURIComponent(web);
+    return `intent://send?phone=${digits}&text=${enc}#Intent;scheme=whatsapp;package=com.whatsapp;S.browser_fallback_url=${fb};end`;
+  }
+  // iOS + desktop: wa.me is WhatsApp's documented universal link.
+  return web;
+}
+
+function showDone(){
+  const first = S.legalName.trim().split(/\s+/)[0] || 'there';
+  const CH_LABEL = { whatsapp:'WhatsApp', telegram:'Telegram', email:'email' };
+  const chLabel = CH_LABEL[S.contactPref] || 'email';
+  const chDetail = S.contactPref === 'telegram' && S.telegramHandle
+    ? ` on Telegram (${escapeHtml(S.telegramHandle.trim().replace(/^@/, '@'))})`
+    : ' via ' + chLabel;
+  const hasNum = WHATSAPP_NUMBER.replace(/\D/g,'').length >= 8;
+  const isWa = S.contactPref === 'whatsapp';
+  const e = env();
+
+  // In a webview the handoff needs one deliberate tap; elsewhere it can be direct.
+  const inAppNote = e.inApp
+    ? `<p class="wa-hint" style="justify-content:center;margin-top:8px">
+         ${I_INFO} Opening straight into the app is blocked inside ${e.app === 'instagram' ? 'Instagram' : e.app === 'tiktok' ? 'TikTok' : 'the Facebook app'}.
+         If nothing happens, tap the menu and choose <b>Open in browser</b>.
+       </p>`
+    : '';
+
+  form.innerHTML = `
+    <div class="done">
+      <div class="done-mark">${I_CHECK}</div>
+      <div class="done-badge"><i></i>Application received</div>
+      <h2 class="h" id="stepTitle" tabindex="-1">Thanks, ${escapeHtml(first)}.</h2>
+      <p class="sub">${
+        isWa && hasNum
+          ? `One tap to start the conversation. Your message is already written — you just press send.`
+          : `Your details are with the partnerships team. Here's exactly what happens next.`
+      }</p>
+
+      ${isWa && hasNum ? `
+        <div style="margin-top:20px">
+          <a class="wa-btn" id="waGo" href="${waTarget()}" rel="noopener">
+            ${I_WA} Start the conversation ${I_ARROW_S}
+          </a>
+          ${inAppNote}
+        </div>` : ''}
+
+      ${!isWa && hasNum ? `
+        <div style="margin-top:20px">
+          <p class="wa-hint" style="justify-content:center;margin-bottom:9px">
+            ${I_INFO} Want a faster answer? WhatsApp is usually <b>15–30 min</b>.
+          </p>
+          <a class="wa-btn" href="${waTarget()}" rel="noopener">${I_WA} Message us on WhatsApp instead ${I_ARROW_S}</a>
+        </div>` : ''}
+
+      <ol class="next-steps">
+        <li>
+          <span class="ns-n">1</span>
+          <span><b>Maya starts your file${chDetail}.</b> She explains how the partnership works,
+            then checks the details you've just given her. Nothing to do yet beyond replying.</span>
+        </li>
+        <li>
+          <span class="ns-n">2</span>
+          <span><b>She collects your documents, one at a time.</b> Licence, selfie, three months of
+            statements. Send them as <b>files</b>, not photos — chat apps shrink pictures and that's
+            the usual reason an upload comes back blurry.</span>
+        </li>
+        <li>
+          <span class="ns-n">3</span>
+          <span><b>Your LLC is formed in your name.</b> You don't do anything for this. It usually
+            takes a few business days, and the company stays yours throughout.</span>
+        </li>
+        <li>
+          <span class="ns-n">4</span>
+          <span><b>Banking and processing are opened for that LLC.</b> This is when verification
+            links start arriving — expect a live selfie, which must be taken there and then rather
+            than picked from your camera roll.</span>
+        </li>
+        <li>
+          <span class="ns-n">5</span>
+          <span><b>You answer each link within ${escapeHtml(speedText())}.</b> The links expire, and an
+            expired one pauses your file until a new one is sent. This is the only part that
+            depends on you.</span>
+        </li>
+        <li>
+          <span class="ns-n">6</span>
+          <span><b>Once the account is live, the partnership pays monthly</b> at ${escapeHtml(tierText())},
+            which is what the response window you chose qualifies you for. A person confirms the
+            exact terms on your partner file.</span>
+        </li>
+      </ol>
+
+      <div class="done-cta">
+        <button type="button" class="btn btn-primary" id="restart" style="padding:0 26px">
+          Review the flow again
+          <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>`;
+
+  navEl.style.display = 'none';
+  progress.querySelector('i').style.width = '100%';
+  live.textContent = 'Application received. Maya will be in touch.';
+  window.scrollTo({ top:0, behavior: reduced() ? 'auto' : 'smooth' });
+
+  document.getElementById('restart').addEventListener('click', () => {
+    Object.keys(S).forEach(k => {
+      if (k === 'creditConsent' || k === 'readyAck' || k === 'tzManual') S[k] = false;
+      else if (k === 'availFrom') S[k] = '09:00';
+      else if (k === 'availTo') S[k] = '18:00';
+      else if (k === 'timezone') S[k] = S.tzDetected || detectZone();
+      else if (k === 'tzDetected') S[k] = S.tzDetected;
+      else S[k] = '';
+    });
+    index = 0;
+    navEl.style.display = '';
+    nextBtn.disabled = false;
+    render('fwd');
+  });
+}
+
+function speedText(){
+  return { '1h':'an hour', 'day':'that same day', '24h':'24 hours' }[S.availSpeed] || 'your window';
+}
+
+function tierText(){
+  return { '1h':'the highest monthly rate', 'day':'a higher monthly rate', '24h':'the standard monthly rate' }[S.availSpeed] || 'your chosen rate';
+}
+
+function escapeHtml(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ============================================================================
+   TOOLBAR
+   ========================================================================== */
+document.getElementById('tMotion').addEventListener('click', function(){
+  const isOn = document.documentElement.dataset.motion !== 'off';
+  document.documentElement.dataset.motion = isOn ? 'off' : 'on';
+  this.setAttribute('aria-pressed', String(isOn));
+});
+
+document.getElementById('tNotes').addEventListener('click', function(){
+  const open = document.getElementById('notes').classList.toggle('open');
+  this.setAttribute('aria-pressed', String(open));
+});
+
+/* ============================================================================
+   BOOT
+   ========================================================================== */
+S.tzDetected = detectZone();
+render('fwd');
+
+})();
+</script>
+</body>
+</html>

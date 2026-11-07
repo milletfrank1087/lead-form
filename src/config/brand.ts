@@ -11,4 +11,10 @@ export const brand = {
   legalEntity: "FynexNetwork LLC",
   copyrightYear: 2026,
   logoSrc: "/logo.png",
+  /**
+   * Where the "Start the conversation" button on the confirmation screen sends people (digits only,
+   * country code first). It is the only WhatsApp number on file and still unverified, so change it
+   * here and every link follows.
+   */
+  whatsappNumber: "13183147693",
 } as const;

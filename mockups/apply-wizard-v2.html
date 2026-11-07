@@ -1,0 +1,1923 @@
+<!doctype html>
+<html lang="en" data-motion="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F4F5F7">
+<title>Fynex — Application Wizard v2 (Fintech, Satoshi)</title>
+
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=switzer@400,500,600,700&f[]=general-sans@400,500,600,700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================================
+   TOKENS — cool neutral, fintech. Tight radii, hairlines, tabular figures.
+   ========================================================================== */
+:root{
+  --bg:          #F4F5F7;
+  --surface:     #FFFFFF;
+  --surface-2:   #FAFBFC;
+  --field:       #FFFFFF;
+
+  --ink:         #0C0F14;
+  --ink-2:       #363D48;
+  --muted:       #626C7A;
+  --faint:       #98A2B0;
+
+  --line:        rgba(12,15,20,.085);
+  --line-2:      rgba(12,15,20,.17);
+  --wash:        rgba(12,15,20,.038);
+  --wash-2:      rgba(12,15,20,.06);
+
+  --error:       #B42318;
+  --error-wash:  rgba(180,35,24,.055);
+  --positive:    #0B7A57;
+
+  --r-xs: 7px;
+  --r-sm: 10px;
+  --r:    12px;
+  --r-lg: 16px;
+
+  --font: "Satoshi", "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --ease-spring: cubic-bezier(.16,1,.3,1);
+  --ease-io:     cubic-bezier(.4,0,.2,1);
+  --ease-pop:    cubic-bezier(.34,1.56,.64,1);
+
+  --shadow-card: 0 1px 2px rgba(12,15,20,.045), 0 12px 32px -18px rgba(12,15,20,.16);
+  --shadow-btn:  0 1px 2px rgba(12,15,20,.14), 0 8px 20px -12px rgba(12,15,20,.5);
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--font);
+  font-size:16px;
+  line-height:1.5;
+  font-feature-settings:"ss01" on, "cv01" on;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:none;
+}
+
+[hidden]{ display:none !important; }
+
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+/* ============================================================================
+   SHELL
+   ========================================================================== */
+.app{ min-height:100dvh; }
+
+/* ---- Desktop rail ---- */
+.rail{ display:none; }
+
+@media (min-width:1024px){
+  .app{
+    display:grid;
+    grid-template-columns:300px minmax(0,1fr);
+    min-height:100dvh;
+  }
+
+  .rail{
+    display:flex; flex-direction:column;
+    position:sticky; top:0; height:100dvh;
+    padding:34px 28px 30px 32px;
+    background:var(--surface-2);
+    border-right:1px solid var(--line);
+  }
+
+  .rail-brand{ display:flex; align-items:center; gap:10px; margin-bottom:42px; }
+  .rail-brand img{
+    width:32px; height:32px; border-radius:50%; object-fit:contain;
+    box-shadow:0 0 0 1px var(--line);
+  }
+  .rail-brand .wordmark{
+    font-size:17px; font-weight:700; letter-spacing:-.025em;
+  }
+  .rail-brand .tag{
+    display:block; margin-top:1px;
+    font:500 9.5px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--faint);
+  }
+
+  .rail-steps{ list-style:none; margin:0; padding:0; }
+  .rail-steps li{
+    display:flex; align-items:center; gap:11px;
+    padding:9px 0; color:var(--faint);
+    transition:color .35s var(--ease-io);
+  }
+  .rail-steps .dot{
+    flex:0 0 auto; width:17px; height:17px; border-radius:50%;
+    border:1.4px solid var(--line-2); position:relative;
+    display:grid; place-items:center;
+    transition:background .35s, border-color .35s;
+  }
+  .rail-steps .dot svg{
+    width:8px; height:8px; opacity:0; transform:scale(.4);
+    transition:opacity .2s, transform .3s var(--ease-pop); color:var(--surface);
+  }
+  .rail-steps .nm{ font-size:13.5px; font-weight:500; letter-spacing:-.008em; }
+
+  .rail-steps li[data-state="done"]{ color:var(--ink-2); }
+  .rail-steps li[data-state="done"] .dot{ background:var(--ink); border-color:var(--ink); }
+  .rail-steps li[data-state="done"] .dot svg{ opacity:1; transform:none; }
+  .rail-steps li[data-state="active"]{ color:var(--ink); }
+  .rail-steps li[data-state="active"] .dot{ border-color:var(--ink); border-width:1.6px; }
+  .rail-steps li[data-state="active"] .dot::after{
+    content:""; width:5px; height:5px; border-radius:50%; background:var(--ink);
+  }
+  .rail-steps li[data-state="active"] .nm{ font-weight:700; }
+
+  .rail-foot{ margin-top:auto; padding-top:22px; border-top:1px solid var(--line); }
+  .rail-foot .assure{ display:flex; align-items:flex-start; gap:8px; margin-bottom:9px; }
+  .rail-foot .assure:last-child{ margin-bottom:0; }
+  .rail-foot .assure svg{ flex:0 0 auto; margin-top:2px; color:var(--positive); }
+  .rail-foot .assure span{ font-size:11.5px; line-height:1.5; color:var(--muted); }
+}
+
+/* ---- Stage ---- */
+.stage{
+  display:flex; flex-direction:column;
+  min-height:100dvh;
+  min-width:0;
+}
+
+.topbar{
+  position:sticky; top:0; z-index:30;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:calc(env(safe-area-inset-top,0px) + 13px) 18px 13px;
+  background:color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter:blur(12px) saturate(1.2);
+  -webkit-backdrop-filter:blur(12px) saturate(1.2);
+}
+@media (min-width:1024px){
+  .topbar{ position:static; padding:0; height:0; overflow:hidden; }
+}
+
+.brand{ display:flex; align-items:center; gap:8px; }
+.brand img{ width:27px; height:27px; border-radius:50%; object-fit:contain; display:block; box-shadow:0 0 0 1px var(--line); }
+.brand b{ font-size:15.5px; font-weight:700; letter-spacing:-.025em; }
+
+.counter{
+  display:flex; align-items:baseline; gap:3px;
+  font:500 11px/1 var(--mono); letter-spacing:.06em; color:var(--faint);
+  font-variant-numeric:tabular-nums;
+}
+.counter .cur{ color:var(--ink); font-weight:500; }
+
+.progress{
+  position:relative; height:2px; background:var(--line);
+  overflow:hidden; flex:0 0 auto;
+}
+.progress i{
+  position:absolute; inset:0 auto 0 0; width:0; background:var(--ink);
+  transition:width .6s var(--ease-spring);
+}
+@media (min-width:1024px){
+  .progress{
+    max-width:none; margin:0;
+    height:2px;
+  }
+}
+
+/* Mobile: form is full-bleed. Desktop: floating white card. */
+.viewport{
+  flex:1 1 auto;
+  display:flex; align-items:flex-start; justify-content:center;
+  padding:clamp(20px,5vw,34px) 18px 26px;
+}
+@media (min-width:600px){
+  .viewport{ padding:clamp(28px,5vw,44px) 28px 30px; }
+}
+@media (min-width:1024px){
+  .viewport{
+    align-items:center;
+    padding:clamp(32px,4vh,56px) clamp(32px,4vw,64px);
+  }
+}
+
+.card{ width:100%; max-width:520px; }
+@media (min-width:1024px){
+  .card{
+    max-width:560px;
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--r-lg);
+    box-shadow:var(--shadow-card);
+    padding:36px 38px 32px;
+  }
+}
+
+/* ============================================================================
+   STEP CONTENT
+   ========================================================================== */
+.eyebrow{
+  display:flex; align-items:center; gap:9px;
+  margin:0 0 14px;
+  font:500 10px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase;
+  color:var(--faint);
+}
+.eyebrow::after{ content:""; flex:1; height:1px; background:var(--line); }
+@media (min-width:1024px){ .eyebrow{ font-size:10.5px; } }
+
+.h{
+  margin:0 0 8px;
+  font-size:clamp(25px,6.4vw,33px);
+  font-weight:700;
+  line-height:1.14;
+  letter-spacing:-.032em;
+  color:var(--ink);
+  text-wrap:balance;
+}
+@media (min-width:1024px){
+  .h{ font-size:clamp(28px,2.1vw,34px); letter-spacing:-.035em; }
+}
+
+.sub{
+  margin:0 0 26px;
+  font-size:14.5px; line-height:1.6; font-weight:400;
+  color:var(--muted); max-width:44ch; text-wrap:pretty;
+}
+@media (min-width:1024px){ .sub{ font-size:15px; margin-bottom:28px; } }
+
+.fields{ display:flex; flex-direction:column; gap:16px; }
+
+.field{ min-width:0; }
+.stack{ display:flex; flex-direction:column; gap:16px; }
+
+.row{ display:grid; gap:12px; grid-template-columns:1fr; }
+@media (min-width:420px){ .row.two{ grid-template-columns:1fr 1fr; } }
+
+.lbl{
+  display:flex; align-items:center; gap:6px;
+  margin-bottom:7px;
+  font-size:11px; font-weight:600; letter-spacing:.055em; text-transform:uppercase;
+  color:var(--ink-2);
+}
+.lbl .optional{
+  font-weight:500; letter-spacing:.04em; text-transform:none;
+  color:var(--faint); font-size:11px;
+}
+
+.wrap{ position:relative; display:flex; align-items:center; }
+
+.inp{
+  width:100%; height:52px; padding:0 14px;
+  border:1px solid var(--line-2); border-radius:var(--r);
+  background:var(--field); color:var(--ink);
+  font-family:var(--font); font-size:16px; font-weight:500; line-height:1;
+  letter-spacing:-.005em;
+  transition:border-color .18s var(--ease-io), box-shadow .2s var(--ease-io), background .18s;
+  appearance:none; -webkit-appearance:none;
+  min-width:0;
+}
+.inp::placeholder{ color:var(--faint); font-weight:400; }
+.inp:hover{ border-color:rgba(12,15,20,.26); }
+.inp:focus{
+  outline:none; border-color:var(--ink);
+  box-shadow:0 0 0 3px rgba(12,15,20,.09);
+}
+textarea.inp{ height:auto; min-height:96px; padding:13px 14px; line-height:1.55; resize:vertical; font-weight:400; }
+
+.inp.has-error{ border-color:var(--error); background:var(--error-wash); }
+.inp.has-error:focus{ box-shadow:0 0 0 3px rgba(180,35,24,.12); }
+
+.prefix{
+  position:absolute; left:14px;
+  font-size:16px; font-weight:500; color:var(--muted);
+  pointer-events:none; user-select:none;
+}
+.wrap.has-prefix .inp{ padding-left:39px; }
+
+.err{
+  display:flex; align-items:flex-start; gap:5px;
+  margin:6px 0 0;
+  font-size:12.5px; line-height:1.4; font-weight:500; color:var(--error);
+  animation:errIn .25s var(--ease-spring) both;
+}
+.err svg{ flex:0 0 auto; margin-top:1px; }
+@keyframes errIn{ from{ opacity:0; transform:translateY(-3px); } to{ opacity:1; transform:none; } }
+
+/* ---- Option cards ---- */
+.opts{ display:flex; flex-direction:column; gap:8px; }
+.opts.grid2{ display:grid; grid-template-columns:1fr; gap:8px; }
+@media (min-width:460px){ .opts.grid2{ grid-template-columns:1fr 1fr; } }
+
+.opt{ position:relative; display:block; cursor:pointer; }
+.opt input{ position:absolute; opacity:0; width:1px; height:1px; }
+
+.opt-box{
+  display:flex; align-items:center; gap:11px;
+  min-height:56px; padding:12px 13px;
+  border:1px solid var(--line-2); border-radius:var(--r);
+  background:var(--field); color:var(--ink);
+  transition:background .2s var(--ease-io), border-color .2s var(--ease-io),
+             color .2s var(--ease-io), transform .16s var(--ease-spring), box-shadow .2s;
+}
+.opt:hover .opt-box{ border-color:rgba(12,15,20,.28); }
+.opt:active .opt-box{ transform:scale(.99); }
+
+.opt-txt{ flex:1; min-width:0; }
+.opt-title{ display:block; font-size:14.5px; font-weight:600; letter-spacing:-.012em; }
+.opt-sub{
+  display:block; margin-top:1px;
+  font-size:12.5px; font-weight:400; color:var(--muted);
+  transition:color .2s;
+}
+
+.tick{
+  flex:0 0 auto; width:19px; height:19px; border-radius:50%;
+  border:1.5px solid var(--line-2);
+  display:grid; place-items:center; order:2;
+  transition:background .2s, border-color .2s;
+}
+.tick svg{ width:9px; height:9px; opacity:0; transform:scale(.4); transition:opacity .16s, transform .26s var(--ease-pop); }
+
+.opt input:checked + .opt-box{
+  background:var(--ink); border-color:var(--ink); color:var(--surface);
+  box-shadow:var(--shadow-btn);
+}
+.opt input:checked + .opt-box .opt-sub{ color:rgba(255,255,255,.6); }
+.opt input:checked + .opt-box .tick{ background:var(--surface); border-color:var(--surface); }
+.opt input:checked + .opt-box .tick svg{ opacity:1; transform:none; color:var(--ink); }
+
+.opt input:focus-visible + .opt-box{ outline:2px solid var(--ink); outline-offset:2px; }
+
+.opt-box.is-error{ border-color:var(--error); background:var(--error-wash); }
+
+/* method cards keep the icon on the left */
+.opt.method .opt-box{ gap:12px; }
+.opt.method .tick{ order:3; }
+.method-ico{ flex:0 0 auto; color:var(--muted); transition:color .2s; }
+.opt input:checked + .opt-box .method-ico{ color:var(--surface); }
+
+/* ---- response-time chip ---- */
+.eta{
+  display:inline-flex; align-items:center; gap:4px;
+  flex:0 0 auto;
+  padding:3px 7px;
+  border-radius:999px;
+  border:1px solid var(--line-2);
+  background:var(--surface-2);
+  font:500 9.5px/1 var(--mono); letter-spacing:.02em;
+  color:var(--muted);
+  white-space:nowrap;
+  transition:background .2s, border-color .2s, color .2s;
+}
+.eta i{
+  width:4px; height:4px; border-radius:50%; background:var(--faint);
+  transition:background .2s;
+}
+.opt input:checked + .opt-box .eta{
+  background:rgba(255,255,255,.14);
+  border-color:rgba(255,255,255,.22);
+  color:rgba(255,255,255,.92);
+}
+.opt input:checked + .opt-box .eta i{ background:rgba(255,255,255,.85); }
+.eta.hot{ border-color:rgba(11,122,87,.28); background:rgba(11,122,87,.07); color:var(--positive); }
+.eta.hot i{ background:var(--positive); }
+.opt input:checked + .opt-box .eta.hot{
+  border-color:rgba(255,255,255,.3);
+  background:rgba(255,255,255,.16);
+  color:#fff;
+}
+
+/* ---- WhatsApp quick-start CTA ---- */
+.wa-cta{
+  display:grid; grid-template-rows:0fr; opacity:0;
+  transition:grid-template-rows .42s var(--ease-spring), opacity .26s;
+}
+.wa-cta.open{ grid-template-rows:1fr; opacity:1; }
+.wa-cta > div{ overflow:hidden; min-height:0; }
+.wa-cta .pad{ padding-top:11px; }
+
+.wa-btn{
+  display:flex; align-items:center; justify-content:center; gap:9px;
+  width:100%; min-height:52px; padding:0 16px;
+  border:0; border-radius:var(--r);
+  background:var(--positive); color:#fff;
+  font-family:var(--font); font-size:14px; font-weight:700; letter-spacing:-.01em;
+  cursor:pointer; text-decoration:none;
+  box-shadow:0 1px 2px rgba(11,122,87,.2), 0 10px 22px -14px rgba(11,122,87,.7);
+  transition:transform .18s var(--ease-spring), background .2s, box-shadow .2s;
+}
+.wa-btn:hover{ background:#0A6B4C; transform:translateY(-1px); }
+.wa-btn:active{ transform:translateY(0) scale(.99); }
+.wa-btn:focus-visible{ outline:2px solid var(--ink); outline-offset:2.5px; }
+.wa-btn svg{ flex:0 0 auto; }
+
+.wa-hint{
+  display:flex; align-items:flex-start; gap:6px;
+  margin:8px 0 0; padding:0 2px;
+  font-size:11.5px; line-height:1.5; color:var(--faint);
+}
+.wa-hint svg{ flex:0 0 auto; margin-top:1px; }
+.wa-hint b{ color:var(--ink-2); font-weight:600; }
+
+/* ---- conditional Telegram ---- */
+.reveal{
+  display:grid; grid-template-rows:0fr; opacity:0;
+  transition:grid-template-rows .42s var(--ease-spring), opacity .26s;
+}
+.reveal.open{ grid-template-rows:1fr; opacity:1; }
+.reveal > div{ overflow:hidden; min-height:0; }
+.reveal .pad{ padding-top:10px; }
+
+/* ---- disclosure ---- */
+.disclose{
+  display:flex; align-items:center; gap:10px; width:100%;
+  margin-top:4px; padding:13px 14px;
+  border:1px dashed var(--line-2); border-radius:var(--r);
+  background:transparent; color:var(--ink-2);
+  font-family:var(--font); font-size:13.5px; font-weight:600; letter-spacing:-.01em;
+  cursor:pointer; text-align:left;
+  transition:border-color .2s, background .2s, color .2s;
+}
+.disclose:hover{ border-color:var(--ink); background:var(--wash); color:var(--ink); }
+.disclose:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+.plus{ position:relative; width:12px; height:12px; flex:0 0 auto; }
+.plus i{ position:absolute; background:currentColor; border-radius:1px; transition:transform .34s var(--ease-spring), opacity .24s; }
+.plus i:first-child{ left:0; top:5.4px; width:12px; height:1.4px; }
+.plus i:last-child{ left:5.4px; top:0; width:1.4px; height:12px; }
+.disclose[aria-expanded="true"] .plus i:last-child{ transform:scaleY(0); opacity:0; }
+.disclose .hint{
+  margin-left:auto; padding-left:8px;
+  font:500 9.5px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  color:var(--faint);
+}
+
+.more{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .44s var(--ease-spring); }
+.more.open{ grid-template-rows:1fr; }
+.more > div{ overflow:hidden; min-height:0; }
+.more-fields{ display:flex; flex-direction:column; gap:16px; padding-top:16px; }
+
+/* ---- state trigger ---- */
+.pick{
+  display:flex; align-items:center; justify-content:space-between; gap:9px;
+  width:100%; height:52px; padding:0 14px;
+  border:1px solid var(--line-2); border-radius:var(--r);
+  background:var(--field); color:var(--ink);
+  font-family:var(--font); font-size:16px; font-weight:500; text-align:left;
+  cursor:pointer;
+  transition:border-color .18s, box-shadow .2s;
+}
+.pick:hover{ border-color:rgba(12,15,20,.26); }
+.pick:focus-visible{ outline:none; border-color:var(--ink); box-shadow:0 0 0 3px rgba(12,15,20,.09); }
+.pick.is-empty span{ color:var(--faint); font-weight:400; }
+.pick svg{ flex:0 0 auto; color:var(--muted); transition:transform .28s var(--ease-spring); }
+.pick[aria-expanded="true"] svg{ transform:rotate(180deg); }
+
+/* ---- consent ---- */
+.consent{
+  display:flex; align-items:flex-start; gap:11px;
+  margin-top:20px; cursor:pointer;
+}
+.consent input{ position:absolute; opacity:0; width:1px; height:1px; }
+.cbox{
+  flex:0 0 auto; width:20px; height:20px; margin-top:1px;
+  border:1.5px solid var(--line-2); border-radius:6px; background:var(--field);
+  display:grid; place-items:center;
+  transition:background .2s, border-color .2s, transform .16s var(--ease-spring);
+}
+.cbox svg{ width:10px; height:10px; opacity:0; transform:scale(.5); transition:opacity .16s, transform .26s var(--ease-pop); }
+.consent input:checked + .cbox{ background:var(--ink); border-color:var(--ink); }
+.consent input:checked + .cbox svg{ opacity:1; transform:none; color:var(--surface); }
+.consent input:focus-visible + .cbox{ outline:2px solid var(--ink); outline-offset:2px; }
+.consent-txt{ font-size:12.5px; line-height:1.55; color:var(--muted); }
+.consent-txt a{ color:var(--ink); font-weight:500; text-underline-offset:2px; text-decoration-color:var(--line-2); }
+.consent-txt a:hover{ text-decoration-color:var(--ink); }
+
+.note{
+  display:flex; align-items:flex-start; gap:7px;
+  margin-top:18px;
+  font-size:11.5px; line-height:1.5; color:var(--faint);
+}
+.note svg{ flex:0 0 auto; margin-top:1px; }
+
+/* ---- intro cover ---- */
+.intro-list{
+  list-style:none; margin:0; padding:0;
+  display:flex; flex-direction:column; gap:13px;
+}
+.intro-list li{
+  display:flex; align-items:flex-start; gap:10px;
+  font-size:13.5px; line-height:1.55; color:var(--muted);
+}
+.intro-list b{ color:var(--ink); font-weight:700; }
+.intro-ico{
+  flex:0 0 auto; width:19px; height:19px; margin-top:1px;
+  border-radius:50%; background:var(--wash-2);
+  display:grid; place-items:center; color:var(--ink);
+}
+.intro-ico svg{ width:10px; height:10px; }
+
+.intro-meta{
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
+  margin-top:24px; padding-top:18px;
+  border-top:1px solid var(--line);
+}
+.intro-meta div{ min-width:0; }
+.intro-meta .k{
+  display:block;
+  font:500 8.5px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  color:var(--faint); margin-bottom:5px;
+}
+.intro-meta .v{ display:block; font-size:12.5px; font-weight:600; color:var(--ink-2); letter-spacing:-.01em; }
+
+/* ---- credit note ---- */
+.credit-note{
+  margin-top:16px; padding:13px 14px;
+  border:1px solid var(--line); border-left:2.5px solid var(--positive);
+  border-radius:0 var(--r) var(--r) 0;
+  background:var(--surface-2);
+}
+.credit-note .cn-head{
+  display:flex; align-items:center; gap:7px;
+  margin-bottom:6px;
+  font-size:12.5px; font-weight:700; color:var(--ink); letter-spacing:-.01em;
+}
+.credit-note .cn-head svg{ flex:0 0 auto; color:var(--positive); }
+.credit-note p{
+  margin:0 0 7px;
+  font-size:12px; line-height:1.55; color:var(--muted);
+}
+.credit-note p:last-child{ margin-bottom:0; }
+.credit-note .srcs{
+  display:flex; flex-wrap:wrap; gap:5px; margin-top:9px;
+}
+.credit-note .srcs span{
+  padding:3px 7px; border-radius:5px;
+  background:var(--surface); border:1px solid var(--line);
+  font:500 9.5px/1.35 var(--mono); letter-spacing:.01em; color:var(--ink-2);
+}
+
+/* ============================================================================
+   NAV — sticky bar on mobile, in-flow under card on desktop
+   ========================================================================== */
+.nav{
+  position:sticky; bottom:0; z-index:30;
+  display:flex; align-items:center; gap:9px;
+  padding:12px 18px calc(env(safe-area-inset-bottom,0px) + 14px);
+  background:linear-gradient(to top, var(--bg) 55%, color-mix(in srgb, var(--bg) 0%, transparent));
+}
+
+@media (min-width:600px){
+  .nav{
+    position:static;
+    max-width:520px; width:100%;
+    margin:0 auto;
+    padding:16px 0 34px;
+    background:none;
+  }
+}
+
+@media (min-width:1024px){
+  .nav{
+    position:static;
+    max-width:560px; width:100%;
+    margin:0 auto;
+    /* 38px matches .card horizontal padding so the button lines up with card content. */
+    padding:18px 38px 40px;
+    background:none;
+  }
+}
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  height:52px; padding:0 20px;
+  border:0; border-radius:var(--r); cursor:pointer;
+  font-family:var(--font); font-size:14.5px; font-weight:700; letter-spacing:-.012em;
+  transition:transform .18s var(--ease-spring), background .2s, color .2s, box-shadow .2s, opacity .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:focus-visible{ outline:2px solid var(--ink); outline-offset:2.5px; }
+
+.btn-primary{
+  flex:1 1 auto; max-width:100%;
+  background:var(--ink); color:var(--surface);
+  box-shadow:var(--shadow-btn);
+}
+.btn-primary:hover{ background:#1A1F27; transform:translateY(-1px); }
+.btn-primary:active{ transform:translateY(0) scale(.988); }
+.btn-primary .arrow{ transition:transform .26s var(--ease-spring); flex:0 0 auto; }
+.btn-primary:hover .arrow{ transform:translateX(2px); }
+.btn-primary[disabled]{ opacity:.42; cursor:not-allowed; transform:none; box-shadow:none; }
+
+/* WhatsApp mode: the same single button, retinted green. Not a second CTA. */
+.btn-primary.is-wa{ background:var(--positive); }
+.btn-primary.is-wa:hover{ background:#0A6B4C; }
+
+.btn-ghost{
+  flex:0 0 auto; padding:0 14px;
+  background:transparent; color:var(--muted);
+}
+.btn-ghost:hover{ color:var(--ink); background:var(--wash); }
+.btn-ghost .chev{ transition:transform .26s var(--ease-spring); }
+.btn-ghost:hover .chev{ transform:translateX(-2px); }
+
+/* ============================================================================
+   STEP MOTION
+   ========================================================================== */
+.step{ display:none; }
+.step.active{ display:block; }
+
+.stag{ animation:stagIn .58s var(--ease-spring) both; animation-delay:calc(var(--i,0) * 50ms); }
+@keyframes stagIn{ from{ opacity:0; transform:translate3d(0,12px,0); } to{ opacity:1; transform:none; } }
+
+.step.active.dir-fwd .stag{ animation-name:staggerF; }
+.step.active.dir-back .stag{ animation-name:staggerB; }
+@keyframes staggerF{ from{ opacity:0; transform:translate3d(11px,9px,0); } to{ opacity:1; transform:none; } }
+@keyframes staggerB{ from{ opacity:0; transform:translate3d(-11px,9px,0); } to{ opacity:1; transform:none; } }
+
+@keyframes nudge{ 25%{ transform:translateX(-3px); } 60%{ transform:translateX(2px); } 100%{ transform:none; } }
+.nudge{ animation:nudge .2s var(--ease-io); }
+
+/* ============================================================================
+   SHEET
+   ========================================================================== */
+.sheet{
+  position:fixed; inset:0; z-index:90;
+  display:flex; align-items:flex-end; justify-content:center;
+  background:rgba(12,15,20,.36);
+  backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+  opacity:0; pointer-events:none; visibility:hidden;
+  transition:opacity .26s var(--ease-io), visibility 0s linear .26s;
+}
+.sheet.open{ opacity:1; pointer-events:auto; visibility:visible; transition:opacity .26s var(--ease-io), visibility 0s; }
+@media (min-width:640px){ .sheet{ align-items:center; } }
+
+.sheet-panel{
+  width:100%; max-width:460px; max-height:84dvh;
+  display:flex; flex-direction:column;
+  background:var(--surface);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+  border-top:1px solid var(--line);
+  transform:translateY(18px); opacity:.6;
+  transition:transform .38s var(--ease-spring), opacity .26s;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  overflow:hidden;
+}
+.sheet.open .sheet-panel{ transform:none; opacity:1; }
+@media (min-width:640px){
+  .sheet-panel{ border-radius:var(--r-lg); border:1px solid var(--line); max-height:68dvh; box-shadow:0 30px 60px -30px rgba(12,15,20,.4); }
+}
+
+.sheet-head{
+  display:flex; align-items:center; gap:9px;
+  padding:12px 13px;
+  border-bottom:1px solid var(--line);
+}
+.sheet-search{
+  flex:1; min-width:0; height:42px; padding:0 12px;
+  border:1px solid var(--line-2); border-radius:var(--r-sm);
+  background:var(--surface-2);
+  font-family:var(--font); font-size:16px; font-weight:500; color:var(--ink);
+}
+.sheet-search:focus{ outline:none; border-color:var(--ink); background:var(--surface); box-shadow:0 0 0 3px rgba(12,15,20,.08); }
+.sheet-cancel{
+  flex:0 0 auto; padding:9px 4px;
+  background:none; border:0;
+  font-family:var(--font); font-size:13.5px; font-weight:600; color:var(--muted);
+  cursor:pointer;
+}
+.sheet-cancel:hover{ color:var(--ink); }
+
+.sheet-list{ list-style:none; margin:0; padding:5px; overflow-y:auto; overscroll-behavior:contain; flex:1; }
+.sheet-list li{
+  display:flex; align-items:center; justify-content:space-between; gap:8px;
+  padding:12px 11px; border-radius:var(--r-sm);
+  font-size:15px; font-weight:500; color:var(--ink-2);
+  cursor:pointer;
+  transition:background .14s, color .14s;
+}
+.sheet-list li:hover{ background:var(--wash); color:var(--ink); }
+.sheet-list li.act{ background:var(--wash-2); color:var(--ink); }
+.sheet-list li[aria-selected="true"]{ background:var(--ink); color:var(--surface); }
+.sheet-list li svg{ width:12px; height:12px; opacity:0; }
+.sheet-list li[aria-selected="true"] svg{ opacity:1; }
+.sheet-empty{ padding:24px 11px; text-align:center; color:var(--faint); font-size:13.5px; cursor:default; }
+
+/* ============================================================================
+   SEND OVERLAY + CONFIRMATION
+   ========================================================================== */
+.send{
+  position:fixed; inset:0; z-index:95;
+  background:var(--ink); color:var(--surface);
+  display:grid; place-items:center;
+  clip-path:circle(0% at 50% 104%);
+  transition:clip-path .66s var(--ease-spring);
+  pointer-events:none;
+}
+.send.on{ clip-path:circle(160% at 50% 104%); pointer-events:auto; }
+.send-in{
+  display:flex; flex-direction:column; align-items:center; gap:20px;
+  transform:translateY(8px); opacity:0;
+  transition:transform .45s var(--ease-spring) .2s, opacity .4s .2s;
+}
+.send.on .send-in{ transform:none; opacity:1; }
+.send-label{ font:500 10px/1 var(--mono); letter-spacing:.16em; text-transform:uppercase; color:rgba(255,255,255,.5); }
+
+.ring{ position:relative; width:88px; height:88px; display:grid; place-items:center; }
+.ring > span{
+  position:absolute; inset:0; border-radius:50%;
+  border:1px solid rgba(255,255,255,.16);
+}
+.ring > span:nth-child(2){ animation:ping 2s var(--ease-io) infinite; }
+.ring > span:nth-child(3){ animation:ping 2s var(--ease-io) .65s infinite; }
+@keyframes ping{ 0%{ transform:scale(.74); opacity:.5; } 100%{ transform:scale(1.5); opacity:0; } }
+.ring .core{
+  position:relative; width:54px; height:54px; border-radius:50%;
+  background:var(--surface); display:grid; place-items:center;
+}
+.ring .core svg{ width:24px; height:24px; color:var(--ink); }
+.ring .core path{ stroke-dasharray:30; stroke-dashoffset:30; animation:draw .45s var(--ease-io) .45s forwards; }
+@keyframes draw{ to{ stroke-dashoffset:0; } }
+
+.done{ text-align:center; padding:clamp(16px,5vw,34px) 0 0; }
+.done-mark{
+  width:60px; height:60px; margin:0 auto 22px; border-radius:50%;
+  background:var(--ink); color:var(--surface);
+  display:grid; place-items:center;
+  animation:popIn .5s var(--ease-pop) both;
+}
+@keyframes popIn{ from{ opacity:0; transform:scale(.6); } to{ opacity:1; transform:none; } }
+.done-mark svg{ width:27px; height:27px; }
+.done-mark path{ stroke-dasharray:30; stroke-dashoffset:30; animation:draw .4s var(--ease-io) .24s forwards; }
+
+.done-badge{
+  display:inline-flex; align-items:center; gap:7px;
+  margin-bottom:18px; padding:6px 11px;
+  border-radius:999px;
+  border:1px solid rgba(11,122,87,.22);
+  background:rgba(11,122,87,.06);
+  font:500 9.5px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  color:var(--positive);
+}
+.done-badge i{ width:5px; height:5px; border-radius:50%; background:var(--positive); }
+
+.done .h{ margin-bottom:12px; }
+.done .sub{ margin-left:auto; margin-right:auto; text-align:center; }
+.done-cta{ margin-top:28px; display:flex; justify-content:center; }
+.done-cta .btn{ max-width:none; }
+
+/* ============================================================================
+   REVIEW TOOLBAR
+   ========================================================================== */
+.fontbar{
+  position:fixed; z-index:70;
+  left:10px; bottom:calc(env(safe-area-inset-bottom,0px) + 118px);
+  display:flex; align-items:center; gap:2px;
+  padding:3px;
+  background:rgba(255,255,255,.94);
+  border:1px solid var(--line); border-radius:999px;
+  box-shadow:0 6px 20px -12px rgba(12,15,20,.35);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+}
+@media (min-width:1024px){ .fontbar{ left:auto; right:20px; bottom:52px; } }
+.font-btn{
+  height:27px; padding:0 10px;
+  border:0; border-radius:999px; background:none;
+  font-size:12px; font-weight:600; letter-spacing:-.01em;
+  color:var(--muted); cursor:pointer;
+  transition:background .16s, color .16s;
+}
+.font-btn:hover{ color:var(--ink); background:var(--wash); }
+.font-btn[aria-pressed="true"]{ background:var(--ink); color:var(--surface); }
+.fontbar .lb{
+  padding:0 6px 0 8px;
+  font:500 8.5px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase; color:var(--faint);
+}
+
+.tools{
+  position:fixed; z-index:70;
+  left:10px; bottom:calc(env(safe-area-inset-bottom,0px) + 84px);
+  display:flex; align-items:center; gap:2px;
+  padding:3px;
+  background:rgba(255,255,255,.94);
+  border:1px solid var(--line); border-radius:999px;
+  box-shadow:0 6px 20px -12px rgba(12,15,20,.35);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+}
+@media (min-width:1024px){
+  .tools{ left:auto; right:20px; bottom:20px; }
+}
+.tool-btn{
+  height:27px; padding:0 9px;
+  border:0; border-radius:999px; background:none;
+  font:500 9.5px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase;
+  color:var(--muted); cursor:pointer;
+  transition:background .16s, color .16s;
+}
+.tool-btn:hover{ color:var(--ink); background:var(--wash); }
+.tool-btn[aria-pressed="true"]{ background:var(--ink); color:var(--surface); }
+.tool-sep{ width:1px; height:14px; background:var(--line-2); margin:0 1px; }
+
+.notes{
+  position:fixed; z-index:71;
+  left:10px; bottom:calc(env(safe-area-inset-bottom,0px) + 154px);
+  width:min(320px, calc(100vw - 20px));
+  max-height:min(56dvh, 440px); overflow-y:auto;
+  padding:15px 16px;
+  background:var(--surface);
+  border:1px solid var(--line); border-radius:var(--r);
+  box-shadow:0 22px 50px -28px rgba(12,15,20,.5);
+  font-size:12px; line-height:1.6; color:var(--muted);
+  display:none;
+}
+@media (min-width:1024px){ .notes{ left:auto; right:20px; bottom:92px; } }
+.notes.open{ display:block; animation:stagIn .26s var(--ease-spring) both; }
+.notes h4{
+  margin:0 0 9px;
+  font:600 9.5px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink);
+}
+.notes ul{ margin:0; padding-left:14px; }
+.notes li{ margin-bottom:7px; }
+.notes li:last-child{ margin-bottom:0; }
+.notes b{ color:var(--ink-2); font-weight:700; }
+
+/* ============================================================================
+   REDUCED MOTION
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after{
+  animation-duration:.001ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:.001ms !important;
+}
+html[data-motion="off"] .send{ clip-path:circle(160% at 50% 104%); }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ==================== DESKTOP RAIL ==================== -->
+  <aside class="rail">
+    <div class="rail-brand">
+      <img src="logo.png" alt="">
+      <div>
+        <span class="wordmark">Fynex</span>
+        <span class="tag">Partner App</span>
+      </div>
+    </div>
+
+    <nav aria-label="Application steps">
+      <ol class="rail-steps" id="railSteps"></ol>
+    </nav>
+
+    <div class="rail-foot">
+      <div class="assure">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>Reviewed by a person within 24 hours</span>
+      </div>
+      <div class="assure">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>Kept strictly confidential</span>
+      </div>
+      <div class="assure">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        <span>No lists — never resold</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ==================== STAGE ==================== -->
+  <div class="stage">
+
+    <header class="topbar">
+      <div class="brand">
+        <img src="logo.png" alt="">
+        <b>Fynex</b>
+      </div>
+      <div class="counter" id="counter" aria-hidden="true">
+        <span class="cur">01</span><span>/</span><span class="tot">05</span>
+      </div>
+    </header>
+
+    <div class="progress" id="progress" role="progressbar" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" aria-label="Application progress">
+      <i></i>
+    </div>
+
+    <main class="viewport">
+      <div class="card" id="card">
+        <form id="form" novalidate autocomplete="on"></form>
+      </div>
+    </main>
+
+    <footer class="nav" id="nav">
+      <button type="button" class="btn btn-ghost" id="back" hidden>
+        <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Back
+      </button>
+      <button type="button" class="btn btn-primary" id="next">
+        <span id="nextLabel">Continue</span>
+        <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </footer>
+
+  </div>
+</div>
+
+<!-- ==================== STATE SHEET ==================== -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Select your state" aria-hidden="true" inert>
+  <div class="sheet-panel" id="sheetPanel">
+    <div class="sheet-head">
+      <input class="sheet-search" id="stateSearch" type="text" autocomplete="off"
+             placeholder="Search states…" role="combobox" aria-expanded="true"
+             aria-controls="stateList" aria-autocomplete="list" aria-label="Search states">
+      <button type="button" class="sheet-cancel" id="sheetCancel">Cancel</button>
+    </div>
+    <ul class="sheet-list" id="stateList" role="listbox" aria-label="US states"></ul>
+  </div>
+</div>
+
+<!-- ==================== SEND OVERLAY ==================== -->
+<div class="send" id="send" aria-hidden="true">
+  <div class="send-in">
+    <div class="ring">
+      <span></span><span></span><span></span>
+      <div class="core">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+    </div>
+    <span class="send-label" id="sendLabel">Sending application</span>
+  </div>
+</div>
+
+<!-- ==================== FONT SWITCHER ==================== -->
+<div class="fontbar" role="group" aria-label="Typeface">
+  <span class="lb">Type</span>
+  <button type="button" class="font-btn" data-font="satoshi" aria-pressed="true">Satoshi</button>
+  <button type="button" class="font-btn" data-font="switzer" aria-pressed="false">Switzer</button>
+  <button type="button" class="font-btn" data-font="general" aria-pressed="false">General</button>
+  <button type="button" class="font-btn" data-font="jakarta" aria-pressed="false">Jakarta</button>
+</div>
+
+<!-- ==================== REVIEW TOOLBAR ==================== -->
+<div class="tools" role="group" aria-label="Mock review controls">
+  <button type="button" class="tool-btn" id="t5" aria-pressed="true" title="Location gets its own step">5 steps</button>
+  <button type="button" class="tool-btn" id="t4" aria-pressed="false" title="Location folds into the details disclosure">4 steps</button>
+  <div class="tool-sep" aria-hidden="true"></div>
+  <button type="button" class="tool-btn" id="tMotion" aria-pressed="true" title="Toggle animation">Motion</button>
+  <button type="button" class="tool-btn" id="tNotes" aria-pressed="false" title="Design rationale">Notes</button>
+</div>
+
+<aside class="notes" id="notes">
+  <h4>What's in this build</h4>
+  <ul>
+    <li><b>Intro cover slide.</b> Filler copy — four trust points plus a format/time/required strip. The intro is <em>not</em> a numbered step, so the flow still reads 01–05.</li>
+    <li><b>Credit disclosure on step 4.</b> States plainly that no soft or hard check is run, and that a screenshot from a platform the applicant already uses may be requested: Equifax, Experian, TransUnion, Credit Karma, myFICO, Capital One CreditWise.</li>
+    <li><b>Telegram handle requires 5–32 characters.</b> Telegram's own API enforces this floor, so a shorter handle is rejected inline rather than accepted and lost.</li>
+    <li><b>Email and phone are hard-required.</b> Format-checked, with persistent inline errors.</li>
+    <li><b>One action per step.</b> Choosing WhatsApp retargets the submit button to “Submit &amp; open WhatsApp” — the form submits, then the chat opens with your message pre-filled. There is deliberately no second competing button before submit.</li>
+    <li><b>Satoshi</b> type stack with JetBrains Mono for figures. Use the Type switcher to compare.</li>
+    <li><b>Field names match the current payload</b> exactly, so porting into <code>Apply.tsx</code> stays mechanical.</li>
+  </ul>
+</aside>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================================
+   STATE — names identical to src/pages/Apply.tsx
+   ========================================================================== */
+const S = {
+  firstName:"", lastName:"", email:"", phone:"",
+  city:"", state:"",
+  employed:"", creditScore:"",
+  message:"", referralCode:"",
+  contactPref:"", telegramHandle:"", agree:false
+};
+
+const EMPLOYMENT = [
+  {v:"employed-full", t:"Employed full-time", s:"Permanent role"},
+  {v:"employed-part", t:"Employed part-time", s:"Under 30 hrs / week"},
+  {v:"self-employed", t:"Self-employed", s:"Owner or contractor"},
+  {v:"other",         t:"Other",           s:"Something else"}
+];
+
+const CREDIT = [
+  {v:"750+",      t:"750+",      s:"Excellent"},
+  {v:"700-749",   t:"700–749",   s:"Very good"},
+  {v:"600-699",   t:"600–699",   s:"Good"},
+  {v:"below-600", t:"Below 600", s:"Still building"}
+];
+
+const METHODS = [
+  {v:"whatsapp", t:"WhatsApp", s:"Fastest response", eta:"15–30 min", hot:true,
+   icon:'<path d="M17.5 14.4c-.3-.1-1.8-.9-2-.9-.3-.1-.5-.2-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.4z"/><path d="M12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.2L2 22l5-1.4c1.5.8 3.2 1.3 5 1.3 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.2c-1.6 0-3.2-.4-4.5-1.2l-.3-.2-3 .8.8-2.9-.2-.3C4 15 3.6 13.5 3.6 12 3.6 7.4 7.4 3.6 12 3.6S20.4 7.4 20.4 12 16.6 20.2 12 20.2z"/>'},
+  {v:"telegram", t:"Telegram", s:"Needs your @handle", eta:"1–2 hrs",
+   icon:'<path d="M11.9 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 11.9 0zm5 7.2c.1 0 .3 0 .5.1a.5.5 0 0 1 .2.3v.5c-.2 1.9-1 6.5-1.4 8.6-.2.9-.5 1.2-.8 1.2-.7.1-1.2-.5-1.9-.9-1.1-.7-1.7-1.1-2.7-1.8-1.2-.8-.4-1.2.3-1.9.2-.2 3.2-3 3.3-3.2v-.2c0-.1-.2 0-.2 0-.1 0-1.8 1.1-5.1 3.3-.5.3-.9.5-1.3.5-.4 0-1.3-.2-1.9-.4-.8-.2-1.3-.4-1.3-.8 0-.2.3-.4.9-.7 3.5-1.5 5.8-2.5 7-3 3.3-1.4 4-1.6 4.5-1.6z"/>'},
+  {v:"email", t:"Email", s:"Sent to your inbox", eta:"24 hrs",
+   icon:'<rect x="2.5" y="4.5" width="19" height="15" rx="2.5"/><path d="m3 7 8.2 5.2a1.9 1.9 0 0 0 2 0L21.5 7"/>'}
+];
+
+/* Response windows, used by the confirmation screen. */
+const ETA = {
+  whatsapp: { short:"15–30 minutes", long:"within 15–30 minutes" },
+  telegram: { short:"1–2 hours",     long:"within 1–2 hours" },
+  email:    { short:"24 hours",      long:"within 24 hours" }
+};
+
+/* Where the WhatsApp CTA sends people. Leave empty to render the button in
+   preview mode (it will explain itself instead of opening a chat). */
+const WHATSAPP_NUMBER = "";
+
+const US = ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","District of Columbia","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
+
+const STEPS = {
+  intro:    { label:"Welcome",       eyebrow:"Partner programme",  h:"",
+              s:"" },
+  name:     { label:"Your name",     eyebrow:"01 / Identity",      h:"Let's start with your name",
+              s:"The name we should use when we're in touch." },
+  contact:  { label:"Contact",       eyebrow:"02 / Contact",       h:"How can we reach you?",
+              s:"Used only to follow up on this application. Never resold." },
+  location: { label:"Location",      eyebrow:"03 / Location",      h:"Where are you based?",
+              s:"Optional — it just routes you to the right regional team." },
+  qual:     { label:"Qualification", eyebrow:"04 / Qualification", h:"Tell us about your situation",
+              s:"This decides which partnership options we can actually offer you." },
+  reach:    { label:"Follow-up",     eyebrow:"05 / Follow-up",     h:"How should we follow up?",
+              s:"Pick the channel you genuinely check." }
+};
+
+const VARIANTS = {
+  5:[{id:"intro"},{id:"name"},{id:"contact"},{id:"location"},{id:"qual"},{id:"reach",locInMore:false}],
+  4:[{id:"intro"},{id:"name"},{id:"contact"},{id:"qual"},{id:"reach",locInMore:true}]
+};
+
+/* ============================================================================
+   ICONS
+   ========================================================================== */
+const I_ALERT = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9.3"/><path d="M12 7.4v5.4M12 16.4v.1"/></svg>';
+const I_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const I_LOCK  = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4.2" y="10.4" width="15.6" height="10.4" rx="2.4"/><path d="M8.2 10.4V7.6a3.8 3.8 0 0 1 7.6 0v2.8"/></svg>';
+const I_CHEV  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>';
+
+/* ============================================================================
+   TEMPLATES
+   ========================================================================== */
+function fieldHTML(o){
+  const val = String(S[o.key] || "").replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+  return `
+  <div class="field">
+    <label class="lbl" for="in-${o.key}">
+      ${o.label}${o.optional ? '<span class="optional">Optional</span>' : ''}
+    </label>
+    <div class="wrap ${o.prefix ? 'has-prefix' : ''}">
+      ${o.prefix ? `<span class="prefix" aria-hidden="true">${o.prefix}</span>` : ''}
+      <input
+        class="inp" id="in-${o.key}" name="${o.key}"
+        type="${o.type || 'text'}"
+        ${o.inputmode ? `inputmode="${o.inputmode}"` : ''}
+        ${o.autocomplete ? `autocomplete="${o.autocomplete}"` : 'autocomplete="off"'}
+        ${o.enterkeyhint ? `enterkeyhint="${o.enterkeyhint}"` : ''}
+        ${o.maxlength ? `maxlength="${o.maxlength}"` : ''}
+        ${o.capitalize ? `autocapitalize="${o.capitalize}"` : ''}
+        placeholder="${o.placeholder || ''}"
+        value="${val}"
+        aria-describedby="err-${o.key}">
+    </div>
+    <p class="err" id="err-${o.key}" hidden>${I_ALERT}<span></span></p>
+  </div>`;
+}
+
+function radioCards(name, items, cols){
+  return `
+  <div class="opts ${cols === 2 ? 'grid2' : ''}" role="radiogroup" aria-labelledby="lb-${name}">
+    ${items.map(it => `
+      <label class="opt">
+        <input type="radio" name="${name}" value="${it.v}" ${S[name] === it.v ? 'checked' : ''}>
+        <span class="opt-box">
+          <span class="opt-txt">
+            <span class="opt-title">${it.t}</span>
+            ${it.s ? `<span class="opt-sub">${it.s}</span>` : ''}
+          </span>
+          <span class="tick" aria-hidden="true">${I_CHECK}</span>
+        </span>
+      </label>`).join('')}
+  </div>
+  <p class="err" id="err-${name}" hidden>${I_ALERT}<span></span></p>`;
+}
+
+function locationHTML(){
+  return `
+  <div class="row two">
+    <div class="field">
+      <label class="lbl" for="pick-state">State</label>
+      <button type="button" class="pick ${S.state ? '' : 'is-empty'}" id="pick-state"
+              aria-haspopup="dialog" aria-expanded="false">
+        <span>${S.state || 'Select'}</span>
+        ${I_CHEV}
+      </button>
+      <p class="err" id="err-state" hidden>${I_ALERT}<span></span></p>
+    </div>
+    ${fieldHTML({key:"city", label:"City", placeholder:"Los Angeles", autocomplete:"address-level2", enterkeyhint:"next"})}
+  </div>`;
+}
+
+function stepBody(def){
+  if (def.id === "intro"){
+    return `
+      <p class="eyebrow stag" style="--i:0">Partner programme · 2026</p>
+      <h2 class="h stag" style="--i:1" tabindex="-1" id="stepTitle">Become a Fynex partner</h2>
+      <p class="sub stag" style="--i:2">
+        We work with independent operators who want a real partnership — not another
+        affiliate link. Applications are read by a person, usually the same day.
+      </p>
+
+      <ul class="intro-list stag" style="--i:3">
+        <li>
+          <span class="intro-ico">${I_CHECK}</span>
+          <span><b>Real revenue share</b> — paid monthly, no clawbacks on renewals.</span>
+        </li>
+        <li>
+          <span class="intro-ico">${I_CHECK}</span>
+          <span><b>Reviewed within 24 hours</b> by a human, not a scoring script.</span>
+        </li>
+        <li>
+          <span class="intro-ico">${I_CHECK}</span>
+          <span><b>No soft credit checks.</b> We never run one — see step 4 for the details.</span>
+        </li>
+        <li>
+          <span class="intro-ico">${I_CHECK}</span>
+          <span><b>Your data stays yours</b> — never sold, never shared with third parties.</span>
+        </li>
+      </ul>
+
+      <div class="intro-meta stag" style="--i:4">
+        <div><span class="k">Format</span><span class="v">5 short steps</span></div>
+        <div><span class="k">Rough time</span><span class="v">About 2 minutes</span></div>
+        <div><span class="k">Required</span><span class="v">Email &amp; phone</span></div>
+      </div>`;
+  }
+
+  const m = STEPS[def.id];
+  return `
+    <p class="eyebrow stag" style="--i:0">${m.eyebrow}</p>
+    <h2 class="h stag" style="--i:1" tabindex="-1" id="stepTitle">${m.h}</h2>
+    <p class="sub stag" style="--i:2">${m.s}</p>
+    <div class="fields stag" style="--i:3">${stepFields(def)}</div>`;
+}
+
+function stepFields(def){
+  if (def.id === "name"){
+    return `
+      <div class="row two">
+        ${fieldHTML({key:"firstName", label:"First name", placeholder:"John", autocomplete:"given-name", enterkeyhint:"next", capitalize:"words"})}
+        ${fieldHTML({key:"lastName",  label:"Last name",  placeholder:"Smith", autocomplete:"family-name", enterkeyhint:"next", capitalize:"words"})}
+      </div>`;
+  }
+
+  if (def.id === "contact"){
+    return `
+      <div class="stack">
+        ${fieldHTML({key:"email", label:"Email address", type:"email", inputmode:"email", autocomplete:"email", placeholder:"you@company.com", enterkeyhint:"next"})}
+        ${fieldHTML({key:"phone", label:"US phone number", type:"tel", inputmode:"tel", autocomplete:"tel-national", prefix:"+1", placeholder:"(555) 000-0000", maxlength:"14", enterkeyhint:"next"})}
+        <p class="note">${I_LOCK} Your details are used only to review this application.</p>
+      </div>`;
+  }
+
+  if (def.id === "location"){
+    return `<div class="stack">
+      ${locationHTML()}
+      <p class="note">${I_LOCK} You can leave this blank and continue.</p>
+    </div>`;
+  }
+
+  if (def.id === "qual"){
+    return `
+      <div class="stack" style="gap:20px">
+        <div class="field">
+          <span class="lbl" id="lb-employed">Employment status</span>
+          ${radioCards("employed", EMPLOYMENT, 2)}
+        </div>
+        <div class="field">
+          <span class="lbl" id="lb-creditScore">Approximate credit score</span>
+          ${radioCards("creditScore", CREDIT, 2)}
+
+          <div class="credit-note">
+            <div class="cn-head">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              No soft or hard credit checks
+            </div>
+            <p>We never pull your credit. Checking your own score is a <b>soft inquiry</b>,
+               which has no effect on your credit score — so looking it up costs you nothing.</p>
+            <p>We may later ask for a screenshot of the score you already see, from any of:</p>
+            <div class="srcs">
+              <span>Equifax</span><span>Experian</span><span>TransUnion</span>
+              <span>Credit Karma</span><span>myFICO</span><span>Capital One CreditWise</span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  if (def.id === "reach"){
+    return `
+      <div class="field">
+        <span class="lbl" id="lb-contactPref">Preferred contact method</span>
+        <div class="opts" role="radiogroup" aria-labelledby="lb-contactPref">
+          ${METHODS.map(m => `
+            <label class="opt method">
+              <input type="radio" name="contactPref" value="${m.v}" ${S.contactPref === m.v ? 'checked' : ''}>
+              <span class="opt-box">
+                <svg class="method-ico" width="16" height="16" viewBox="0 0 24 24"
+                     fill="${m.v === 'email' ? 'none' : 'currentColor'}"
+                     stroke="${m.v === 'email' ? 'currentColor' : 'none'}"
+                     stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                     aria-hidden="true">${m.icon}</svg>
+                <span class="opt-txt">
+                  <span class="opt-title">${m.t}</span>
+                  <span class="opt-sub">${m.s}</span>
+                </span>
+                <span class="eta ${m.hot ? 'hot' : ''}" aria-hidden="true"><i></i>${m.eta}</span>
+                <span class="tick" aria-hidden="true">${I_CHECK}</span>
+              </span>
+            </label>`).join('')}
+        </div>
+
+        <div class="reveal ${S.contactPref === 'telegram' ? 'open' : ''}" id="tgReveal">
+          <div><div class="pad">
+            ${fieldHTML({key:"telegramHandle", label:"Telegram username", placeholder:"@yourhandle", autocomplete:"off", enterkeyhint:"next", capitalize:"none"})}
+          </div></div>
+        </div>
+
+        <div class="wa-cta ${S.contactPref === 'whatsapp' ? 'open' : ''}" id="waCta">
+          <div><div class="pad" id="waPad"></div></div>
+        </div>
+        <p class="err" id="err-contactPref" hidden>${I_ALERT}<span></span></p>
+      </div>
+
+      <button type="button" class="disclose" id="disclose" aria-expanded="false" aria-controls="more">
+        <span class="plus" aria-hidden="true"><i></i><i></i></span>
+        Add more details
+        <span class="hint">Optional</span>
+      </button>
+
+      <div class="more" id="more">
+        <div id="moreInner" inert>
+          <div class="more-fields">
+            ${def.locInMore ? locationHTML() : ''}
+            <div class="field">
+              <label class="lbl" for="in-message">Anything we should know?<span class="optional">Optional</span></label>
+              <textarea class="inp" id="in-message" name="message" rows="4"
+                        placeholder="Tell us a little about yourself…"
+                        aria-describedby="err-message">${String(S.message || '').replace(/</g,'&lt;')}</textarea>
+              <p class="err" id="err-message" hidden>${I_ALERT}<span></span></p>
+            </div>
+            ${fieldHTML({key:"referralCode", label:"Referral code", optional:true, placeholder:"A1B2C3", maxlength:"12", enterkeyhint:"done", capitalize:"characters"})}
+          </div>
+        </div>
+      </div>
+
+      <label class="consent" id="consentWrap">
+        <input type="checkbox" name="agree" id="agree" ${S.agree ? 'checked' : ''}>
+        <span class="cbox" aria-hidden="true">${I_CHECK}</span>
+        <span class="consent-txt">
+          I confirm the information above is accurate and agree to the
+          <a href="#" onclick="return false">Terms</a> and
+          <a href="#" onclick="return false">Privacy Policy</a>.
+        </span>
+      </label>
+      <p class="err" id="err-agree" style="margin-left:31px" hidden>${I_ALERT}<span></span></p>`;
+  }
+
+  return '';
+}
+
+/* ============================================================================
+   ELEMENTS
+   ========================================================================== */
+let variant = 5;
+let index = 0;
+
+const form     = document.getElementById('form');
+const card     = document.getElementById('card');
+const counter  = document.getElementById('counter');
+const progress = document.getElementById('progress');
+const railList = document.getElementById('railSteps');
+const backBtn  = document.getElementById('back');
+const nextBtn  = document.getElementById('next');
+const nextLbl  = document.getElementById('nextLabel');
+const sendEl   = document.getElementById('send');
+const sheet    = document.getElementById('sheet');
+const sheetPanel = document.getElementById('sheetPanel');
+const stateSearch = document.getElementById('stateSearch');
+const stateList   = document.getElementById('stateList');
+const navEl    = document.getElementById('nav');
+
+const live = document.createElement('div');
+live.className = 'sr-only';
+live.setAttribute('aria-live', 'polite');
+document.body.appendChild(live);
+
+const reduced = () =>
+  document.documentElement.dataset.motion === 'off' ||
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ============================================================================
+   RENDER
+   ========================================================================== */
+function render(dir){
+  const steps = VARIANTS[variant];
+  const prevH = card.getBoundingClientRect().height;
+
+  form.innerHTML = steps.map((def, i) => `
+    <section class="step ${i === index ? 'active' : ''} ${dir === 'back' ? 'dir-back' : dir === 'fwd' ? 'dir-fwd' : ''}"
+             data-step="${def.id}" ${i === index ? '' : 'hidden'}>
+      ${stepBody(def)}
+    </section>`).join('');
+
+  syncChrome();
+  bind();
+
+  if (!reduced() && prevH > 40){
+    const nowH = card.getBoundingClientRect().height;
+    if (Math.abs(nowH - prevH) > 2){
+      card.style.height = prevH + 'px';
+      void card.offsetHeight;
+      card.style.transition = 'height .42s cubic-bezier(.16,1,.3,1)';
+      card.style.height = nowH + 'px';
+      window.setTimeout(() => { card.style.height = ''; card.style.transition = ''; }, 460);
+    }
+  }
+}
+
+function syncSubmitLabel(){
+  const steps = VARIANTS[variant];
+  const isLast = index === steps.length - 1;
+  if (!isLast){
+    nextLbl.textContent = steps[index].id === 'intro' ? 'Start application' : 'Continue';
+    nextBtn.classList.remove('is-wa');
+    return;
+  }
+  const wa = S.contactPref === 'whatsapp';
+  nextLbl.textContent = wa ? 'Submit & open WhatsApp' : 'Submit application';
+  nextBtn.classList.toggle('is-wa', wa);
+}
+
+function syncChrome(){
+  const steps = VARIANTS[variant];
+  const total = steps.length;
+  const flowTotal = total - 1;                       // the intro cover is not a numbered step
+  const isIntro = steps[index].id === 'intro';
+  const flowPos = isIntro ? 0 : index;               // 1-based within the real flow
+  const m = STEPS[steps[index].id];
+
+  counter.querySelector('.cur').textContent = String(isIntro ? 0 : Math.min(flowPos, flowTotal)).padStart(2, '0');
+  counter.querySelector('.tot').textContent = String(flowTotal).padStart(2, '0');
+  counter.style.visibility = isIntro ? 'hidden' : '';
+
+  const pct = isIntro ? 0 : (flowPos / flowTotal) * 100;
+  progress.querySelector('i').style.width = pct + '%';
+  progress.setAttribute('aria-valuemin', '0');
+  progress.setAttribute('aria-valuenow', String(isIntro ? 0 : flowPos));
+  progress.setAttribute('aria-valuemax', String(flowTotal));
+  progress.setAttribute('aria-valuetext',
+    isIntro ? 'Welcome screen' : `Step ${flowPos} of ${flowTotal}: ${m.label}`);
+
+  backBtn.hidden = index === 0;
+  syncSubmitLabel();
+
+  railList.innerHTML = steps.filter(d => d.id !== 'intro').map((d, i) => {
+    const flowIndex = i + 1;                          // 1-based
+    const st = flowIndex < flowPos ? 'done' : flowIndex === flowPos ? 'active' : 'todo';
+    return `<li data-state="${isIntro ? 'todo' : st}">
+      <span class="dot" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <span class="nm">${STEPS[d.id].label}</span>
+    </li>`;
+  }).join('');
+}
+
+/* ============================================================================
+   BIND
+   ========================================================================== */
+function bind(){
+  const sc = form.querySelector('.step.active');
+  if (!sc) return;
+
+  sc.querySelectorAll('input.inp, textarea.inp').forEach(el => {
+    el.addEventListener('input', () => {
+      let v = el.value;
+      if (el.name === 'phone'){ v = formatPhone(v); el.value = v; }
+      if (el.name === 'referralCode'){ v = v.toUpperCase().replace(/[^A-Z0-9-]/g, ''); el.value = v; }
+      S[el.name] = v;
+      if (el.classList.contains('has-error')) validate(el.name, sc);
+    });
+    el.addEventListener('blur', () => {
+      if (S[el.name] !== undefined) validate(el.name, sc);
+    });
+  });
+
+  sc.querySelectorAll('input[type="radio"]').forEach(r => {
+    r.addEventListener('change', () => {
+      S[r.name] = r.value;
+      clearErr(r.name, sc);
+      if (r.name === 'contactPref'){
+        const rev = sc.querySelector('#tgReveal');
+        if (rev){
+          const open = r.value === 'telegram';
+          rev.classList.toggle('open', open);
+          if (open) window.setTimeout(() => sc.querySelector('#in-telegramHandle')?.focus({preventScroll:true}), 220);
+        }
+        const wa = sc.querySelector('#waCta');
+        if (wa){
+          const openWa = r.value === 'whatsapp';
+          wa.classList.toggle('open', openWa);
+          if (openWa) paintWa(sc);
+        }
+        syncSubmitLabel();
+      }
+    });
+  });
+
+  /* Telegram requires 5+ characters; drop the soft hint now that it is a hard rule. */
+
+  const wa = sc.querySelector('#waCta');
+  if (wa && S.contactPref === 'whatsapp') paintWa(sc);
+
+  const agree = sc.querySelector('#agree');
+  if (agree) agree.addEventListener('change', () => { S.agree = agree.checked; clearErr('agree', sc); });
+
+  const dis = sc.querySelector('#disclose');
+  const more = sc.querySelector('#more');
+  const inner = sc.querySelector('#moreInner');
+  if (dis && more && inner){
+    if (S.moreOpen){
+      more.classList.add('open');
+      dis.setAttribute('aria-expanded', 'true');
+      inner.removeAttribute('inert');
+    }
+    dis.addEventListener('click', () => {
+      const open = !more.classList.contains('open');
+      more.classList.toggle('open', open);
+      dis.setAttribute('aria-expanded', String(open));
+      inner.toggleAttribute('inert', !open);
+      S.moreOpen = open;
+      dis.focus({preventScroll:true});
+    });
+  }
+
+  const pick = sc.querySelector('#pick-state');
+  if (pick) pick.addEventListener('click', openSheet);
+}
+
+/* ============================================================================
+   WHATSAPP QUICK-START
+   ========================================================================== */
+const I_WA = '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.5 14.4c-.3-.1-1.8-.9-2-.9-.3-.1-.5-.2-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.4z"/><path d="M12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.2L2 22l5-1.4c1.5.8 3.2 1.3 5 1.3 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.2c-1.6 0-3.2-.4-4.5-1.2l-.3-.2-3 .8.8-2.9-.2-.3C4 15 3.6 13.5 3.6 12 3.6 7.4 7.4 3.6 12 3.6S20.4 7.4 20.4 12 16.6 20.2 12 20.2z"/></svg>';
+const I_ARROW = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>';
+const I_INFO = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="12" cy="12" r="9.3"/><path d="M12 11v5.5M12 7.6v.1"/></svg>';
+
+function waLink(){
+  const first = S.firstName.trim();
+  const msg = `Hi Fynex — I just submitted a partner application${first ? ' (' + first + ')' : ''}. Could we talk?`;
+  return `https://wa.me/${WHATSAPP_NUMBER.replace(/\D/g,'')}?text=${encodeURIComponent(msg)}`;
+}
+
+function paintWa(sc){
+  const pad = sc.querySelector('#waPad');
+  if (!pad) return;
+
+  const hasNum = WHATSAPP_NUMBER.replace(/\D/g,'').length >= 8;
+
+  // No second CTA here. Choosing WhatsApp retargets the submit button itself,
+  // so the step has exactly one action to take.
+  pad.innerHTML = hasNum
+    ? `<p class="wa-hint" style="margin:0">${I_INFO} On submit we'll open WhatsApp with your message ready — <b>no waiting for a callback</b>.</p>`
+    : `<p class="wa-hint" style="margin:0">${I_INFO} On submit this opens WhatsApp with your message ready. <b>Preview:</b> set <code>WHATSAPP_NUMBER</code> to activate.</p>`;
+}
+
+/* ============================================================================
+   VALIDATION
+   ========================================================================== */
+const EMAIL = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+
+function formatPhone(v){
+  const d = v.replace(/\D/g, '').slice(0, 10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `(${d.slice(0,3)}) ${d.slice(3)}`;
+  return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+}
+
+function errFor(k){
+  switch (k){
+    case 'firstName': return S.firstName.trim() ? '' : 'Enter your first name';
+    case 'lastName':  return S.lastName.trim()  ? '' : 'Enter your last name';
+    case 'email':
+      if (!S.email.trim()) return 'Enter your email address';
+      return EMAIL.test(S.email.trim()) ? '' : 'That email doesn\'t look right';
+    case 'phone': {
+      const n = S.phone.replace(/\D/g, '').length;
+      if (!n) return 'Enter your phone number';
+      return n === 10 ? '' : 'Enter a 10-digit US number';
+    }
+    case 'employed':    return S.employed ? '' : 'Choose your employment status';
+    case 'creditScore': return S.creditScore ? '' : 'Choose a credit score range';
+    case 'contactPref': return S.contactPref ? '' : 'Choose how we should reach you';
+    case 'telegramHandle': {
+      if (S.contactPref !== 'telegram') return '';
+      const h = S.telegramHandle.trim().replace(/^@/, '');
+      if (!h) return 'Enter your Telegram username';
+      // Telegram itself requires 5–32 characters; anything shorter cannot resolve.
+      return /^[a-z0-9_]{5,32}$/i.test(h) ? '' : 'Use 5–32 letters, numbers or underscores';
+    }
+    case 'agree': return S.agree ? '' : 'Please accept the terms to continue';
+    default: return '';
+  }
+}
+
+function setErr(k, msg, sc){
+  const el = sc.querySelector(`#err-${k}`);
+  if (!el) return;
+  el.hidden = false;
+  el.querySelector('span').textContent = msg;
+
+  const input = sc.querySelector(`#in-${k}`);
+  if (input){ input.classList.add('has-error'); input.setAttribute('aria-invalid', 'true'); }
+
+  sc.querySelectorAll(`input[name="${k}"]`).forEach(r => {
+    r.setAttribute('aria-invalid', 'true');
+    const box = r.nextElementSibling;
+    if (box) box.classList.add('is-error');
+  });
+
+  if (k === 'agree'){
+    const w = sc.querySelector('#consentWrap');
+    if (w) w.classList.add('errored');
+  }
+}
+
+function clearErr(k, sc){
+  const el = sc.querySelector(`#err-${k}`);
+  if (el) el.hidden = true;
+
+  const input = sc.querySelector(`#in-${k}`);
+  if (input){ input.classList.remove('has-error'); input.removeAttribute('aria-invalid'); }
+
+  sc.querySelectorAll(`input[name="${k}"]`).forEach(r => {
+    r.removeAttribute('aria-invalid');
+    const box = r.nextElementSibling;
+    if (box) box.classList.remove('is-error');
+  });
+
+  if (k === 'agree'){
+    const w = sc.querySelector('#consentWrap');
+    if (w) w.classList.remove('errored');
+    const cb = sc.querySelector('#agree');
+    if (cb) cb.removeAttribute('aria-invalid');
+  }
+}
+
+function validate(k, sc){
+  const msg = errFor(k);
+  if (msg) setErr(k, msg, sc); else clearErr(k, sc);
+  return !msg;
+}
+
+function validateStep(){
+  const id = VARIANTS[variant][index].id;
+  const sc = form.querySelector('.step.active');
+  const need =
+    id === 'name'    ? ['firstName', 'lastName'] :
+    id === 'contact' ? ['email', 'phone'] :
+    id === 'qual'    ? ['employed', 'creditScore'] :
+    id === 'reach'   ? ['contactPref', 'agree', ...(S.contactPref === 'telegram' ? ['telegramHandle'] : [])] :
+    [];
+
+  let bad = null;
+  need.forEach(k => { if (!validate(k, sc) && !bad) bad = k; });
+
+  if (bad){
+    const target =
+      sc.querySelector(`#in-${bad}`) ||
+      sc.querySelector(`input[name="${bad}"]`)?.closest('.opt') ||
+      sc.querySelector(`input[name="${bad}"]`)?.closest('.consent');
+
+    if (target){
+      target.scrollIntoView({ block: 'center', behavior: reduced() ? 'auto' : 'smooth' });
+      target.classList.remove('nudge');
+      void target.offsetWidth;
+      target.classList.add('nudge');
+    }
+    const focusable = sc.querySelector(`#in-${bad}`) || sc.querySelector(`input[name="${bad}"]`);
+    if (focusable) focusable.focus({ preventScroll: true });
+
+    live.textContent = errFor(bad);
+    return false;
+  }
+  return true;
+}
+
+/* ============================================================================
+   NAV
+   ========================================================================== */
+function go(dir){
+  const total = VARIANTS[variant].length;
+
+  if (dir === 'fwd'){
+    if (!validateStep()) return;
+    if (index === total - 1){ submit(); return; }
+  }
+
+  index = Math.max(0, Math.min(total - 1, index + (dir === 'fwd' ? 1 : -1)));
+  render(dir);
+
+  if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' });
+  window.setTimeout(() => form.querySelector('#stepTitle')?.focus({ preventScroll: true }), 60);
+}
+
+backBtn.addEventListener('click', () => go('back'));
+nextBtn.addEventListener('click', () => go('fwd'));
+
+form.addEventListener('submit', e => { e.preventDefault(); go('fwd'); });
+
+form.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'radio' && e.target.type !== 'checkbox'){
+    e.preventDefault();
+    go('fwd');
+  }
+});
+
+/* ============================================================================
+   STATE SHEET
+   ========================================================================== */
+let sheetIdx = -1;
+let sheetData = US.slice();
+
+function paintSheet(q){
+  const query = q.trim().toLowerCase();
+  sheetData = US.filter(s => !query || s.toLowerCase().includes(query));
+
+  if (!sheetData.length){
+    stateList.innerHTML = `<li class="sheet-empty" role="presentation">No match for “${q.replace(/</g,'&lt;')}”</li>`;
+    sheetIdx = -1;
+    stateSearch.removeAttribute('aria-activedescendant');
+    return;
+  }
+
+  sheetIdx = sheetData.indexOf(S.state);
+  stateList.innerHTML = sheetData.map((s, i) => `
+    <li role="option" id="so-${i}" data-v="${s}" aria-selected="${S.state === s}" class="${i === sheetIdx ? 'act' : ''}">
+      <span>${s}</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </li>`).join('');
+
+  if (sheetIdx >= 0) stateSearch.setAttribute('aria-activedescendant', `so-${sheetIdx}`);
+  else stateSearch.removeAttribute('aria-activedescendant');
+}
+
+function openSheet(){
+  const p = document.getElementById('pick-state');
+  if (p) p.setAttribute('aria-expanded', 'true');
+  stateSearch.value = '';
+  paintSheet('');
+  sheet.classList.add('open');
+  sheet.setAttribute('aria-hidden', 'false');
+  sheet.removeAttribute('inert');
+  document.body.style.overflow = 'hidden';
+  window.setTimeout(() => stateSearch.focus({ preventScroll: true }), 80);
+}
+
+function closeSheet(restore){
+  sheet.classList.remove('open');
+  sheet.setAttribute('aria-hidden', 'true');
+  sheet.setAttribute('inert', '');
+  document.body.style.overflow = '';
+  const p = document.getElementById('pick-state');
+  if (p){
+    p.setAttribute('aria-expanded', 'false');
+    if (restore) p.focus({ preventScroll: true });
+  }
+}
+
+function chooseState(v){
+  S.state = v;
+  const p = document.getElementById('pick-state');
+  if (p){
+    p.classList.remove('is-empty');
+    p.querySelector('span').textContent = v;
+  }
+  clearErr('state', form.querySelector('.step.active'));
+  closeSheet(true);
+}
+
+document.getElementById('sheetCancel').addEventListener('click', () => closeSheet(true));
+sheet.addEventListener('click', e => { if (e.target === sheet) closeSheet(true); });
+stateSearch.addEventListener('input', () => paintSheet(stateSearch.value));
+
+stateSearch.addEventListener('keydown', e => {
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault();
+    if (!sheetData.length) return;
+    const max = sheetData.length - 1;
+    if (sheetIdx < 0) sheetIdx = e.key === 'ArrowDown' ? 0 : max;
+    else sheetIdx = Math.max(0, Math.min(max, sheetIdx + (e.key === 'ArrowDown' ? 1 : -1)));
+    stateList.querySelectorAll('li[role="option"]').forEach((li, i) => li.classList.toggle('act', i === sheetIdx));
+    stateList.querySelector(`#so-${sheetIdx}`)?.scrollIntoView({ block: 'nearest' });
+    stateSearch.setAttribute('aria-activedescendant', `so-${sheetIdx}`);
+  }
+  if (e.key === 'Enter'){
+    e.preventDefault();
+    if (sheetIdx >= 0 && sheetData[sheetIdx]) chooseState(sheetData[sheetIdx]);
+  }
+  if (e.key === 'Escape'){ e.preventDefault(); closeSheet(true); }
+});
+
+/* keep focus inside the dialog */
+sheet.addEventListener('keydown', e => {
+  if (e.key !== 'Tab' || !sheet.classList.contains('open')) return;
+  const f = sheetPanel.querySelectorAll('input, button');
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+
+stateList.addEventListener('click', e => {
+  const li = e.target.closest('li[data-v]');
+  if (li) chooseState(li.dataset.v);
+});
+
+/* ============================================================================
+   SUBMIT → HERO MOMENT → CONFIRMATION
+   ========================================================================== */
+const CHANNEL = { whatsapp:"WhatsApp", telegram:"Telegram", email:"email" };
+
+function submit(){
+  const wantsWa = S.contactPref === 'whatsapp';
+  const hasNum = WHATSAPP_NUMBER.replace(/\D/g,'').length >= 8;
+
+  // Open the tab during the click so popup blockers allow it. Navigated after submit.
+  const waWin = (wantsWa && hasNum) ? window.open('', '_blank') : null;
+
+  nextBtn.disabled = true;
+  sendEl.classList.add('on');
+  sendEl.setAttribute('aria-hidden', 'false');
+  live.textContent = 'Sending your application.';
+
+  const r = reduced();
+
+  window.setTimeout(() => {
+    document.getElementById('sendLabel').textContent = 'Application received';
+
+    window.setTimeout(() => {
+      sendEl.classList.remove('on');
+      sendEl.setAttribute('aria-hidden', 'true');
+
+      if (waWin){
+        try { waWin.location.href = waLink(); } catch (e) { /* blocked — confirmation offers a manual link */ }
+        showDone({ waHandoff: true });
+      } else {
+        showDone({ waHandoff: false });
+      }
+    }, r ? 50 : 850);
+  }, r ? 350 : 1400);
+}
+
+function showDone(opts){
+  opts = opts || {};
+  const ch = CHANNEL[S.contactPref] || 'email';
+  const eta = ETA[S.contactPref] || ETA.email;
+  const hasNum = WHATSAPP_NUMBER.replace(/\D/g,'').length >= 8;
+  const isWa = S.contactPref === 'whatsapp';
+
+  const lead = opts.waHandoff
+    ? `Your application is in. <strong style="color:var(--ink);font-weight:700">WhatsApp should have opened</strong> in a new tab with your message ready — hit send and we'll pick it up straight away.`
+    : `A person reviews every application. Expect to hear from us via
+        <strong style="color:var(--ink);font-weight:700">${ch}</strong>
+        <strong style="color:var(--ink);font-weight:700">${eta.long}</strong>.`;
+
+  form.innerHTML = `
+    <div class="done">
+      <div class="done-mark">${I_CHECK}</div>
+      <div class="done-badge"><i></i>Application received</div>
+      <h2 class="h" id="stepTitle" tabindex="-1">You're on the list.<br>We'll be in touch.</h2>
+      <p class="sub">${lead}</p>
+
+      ${isWa && hasNum ? `
+        <div style="margin-top:22px">
+          <a class="wa-btn" href="${waLink()}" target="_blank" rel="noopener noreferrer">${I_WA} Open WhatsApp again ${I_ARROW}</a>
+          <p class="wa-hint" style="justify-content:center">${I_INFO} Only if the tab didn't open or you closed it.</p>
+        </div>` : ''}
+
+      ${!isWa && hasNum ? `
+        <div style="margin-top:22px">
+          <p class="wa-hint" style="justify-content:center;margin-bottom:9px">
+            ${I_INFO} Want a faster answer? WhatsApp is usually <b>15–30 min</b>.
+          </p>
+          <a class="wa-btn" href="${waLink()}" target="_blank" rel="noopener noreferrer">${I_WA} Message us on WhatsApp instead ${I_ARROW}</a>
+        </div>` : ''}
+
+      ${isWa && !hasNum ? `
+        <div style="margin-top:22px">
+          <p class="wa-hint" style="justify-content:center">${I_INFO} <b>Preview:</b> set <code>WHATSAPP_NUMBER</code> to activate the WhatsApp handoff.</p>
+        </div>` : ''}
+
+      <div class="done-cta">
+        <button type="button" class="btn btn-primary" id="restart" style="padding:0 26px">
+          Review the flow again
+          <svg class="arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>`;
+
+  navEl.style.display = 'none';
+  progress.querySelector('i').style.width = '100%';
+  live.textContent = opts.waHandoff
+    ? 'Application received. WhatsApp should have opened in a new tab.'
+    : `Application received. We'll contact you via ${ch} ${eta.long}.`;
+  window.scrollTo({ top: 0, behavior: reduced() ? 'auto' : 'smooth' });
+
+  document.getElementById('restart').addEventListener('click', () => {
+    Object.keys(S).forEach(k => {
+      if (k === 'moreOpen') S[k] = false;
+      else S[k] = (typeof S[k] === 'boolean') ? false : '';
+    });
+    index = 0;
+    navEl.style.display = '';
+    nextBtn.disabled = false;
+    render('fwd');
+  });
+}
+
+/* ============================================================================
+   REVIEW TOOLBAR
+   ========================================================================== */
+function setVariant(v){
+  if (variant === v) return;
+  variant = v;
+  index = 0;
+  S.moreOpen = false;
+  document.getElementById('t5').setAttribute('aria-pressed', String(v === 5));
+  document.getElementById('t4').setAttribute('aria-pressed', String(v === 4));
+  navEl.style.display = '';
+  nextBtn.disabled = false;
+  render('fwd');
+}
+
+document.getElementById('t5').addEventListener('click', () => setVariant(5));
+document.getElementById('t4').addEventListener('click', () => setVariant(4));
+
+document.getElementById('tMotion').addEventListener('click', function(){
+  const isOn = document.documentElement.dataset.motion !== 'off';
+  document.documentElement.dataset.motion = isOn ? 'off' : 'on';
+  this.setAttribute('aria-pressed', String(isOn));
+});
+
+document.getElementById('tNotes').addEventListener('click', function(){
+  const open = document.getElementById('notes').classList.toggle('open');
+  this.setAttribute('aria-pressed', String(open));
+});
+
+/* ---- typeface switcher ---- */
+const FONTS = {
+  satoshi: '"Satoshi", "Manrope", ui-sans-serif, system-ui, sans-serif',
+  switzer: '"Switzer", "Manrope", ui-sans-serif, system-ui, sans-serif',
+  general: '"General Sans", "Manrope", ui-sans-serif, system-ui, sans-serif',
+  jakarta: '"Plus Jakarta Sans", "Manrope", ui-sans-serif, system-ui, sans-serif'
+};
+
+document.querySelectorAll('.font-btn').forEach(function(b){
+  b.addEventListener('click', function(){
+    const key = b.dataset.font;
+    document.documentElement.style.setProperty('--font', FONTS[key]);
+    document.querySelectorAll('.font-btn').forEach(function(x){
+      x.setAttribute('aria-pressed', String(x === b));
+    });
+  });
+});
+
+/* ============================================================================
+   BOOT
+   ========================================================================== */
+render('fwd');
+
+})();
+</script>
+</body>
+</html>

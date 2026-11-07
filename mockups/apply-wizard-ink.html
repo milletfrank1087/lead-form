@@ -1,0 +1,1375 @@
+<!doctype html>
+<html lang="en" data-motion="on">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#F7F6F2">
+<title>Fynex — Application Wizard (Ink &amp; Paper mock)</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:ital,wght@0,400..700;1,400..700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================================
+   INK & PAPER — token layer
+   Monochrome, editorial. Hairlines and whitespace instead of shadows and blur.
+   ========================================================================== */
+:root{
+  --paper:        #F7F6F2;
+  --paper-lift:   #FBFAF7;
+  --field:        #FEFDFB;
+
+  --ink:          #131312;
+  --ink-soft:     #3A3936;
+  --muted:        #6E6D67;
+  --faint:        #A3A29B;
+
+  --line:         rgba(19,19,18,.105);
+  --line-strong:  rgba(19,19,18,.20);
+  --wash:         rgba(19,19,18,.04);
+  --wash-2:       rgba(19,19,18,.065);
+
+  --error:        #8E2F22;
+  --error-wash:   rgba(142,47,34,.07);
+  --ok:           #1E5B41;
+
+  --r-sm: 9px;
+  --r:    13px;
+  --r-lg: 19px;
+  --pill: 999px;
+
+  --display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --ui:      "Instrument Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:    "Geist Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --ease-spring: cubic-bezier(.16,1,.3,1);
+  --ease-io:     cubic-bezier(.4,0,.2,1);
+  --ease-pop:    cubic-bezier(.34,1.56,.64,1);
+}
+
+*,*::before,*::after{ box-sizing:border-box; }
+
+html,body{ height:100%; }
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:var(--ui);
+  font-size:16px;
+  line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+  text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+
+/* Paper grain — tactile, barely-there. */
+.grain{
+  position:fixed; inset:0; z-index:1; pointer-events:none; opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E");
+  background-size:180px 180px;
+}
+
+.sr-only{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+/* ============================================================================
+   SHELL
+   ========================================================================== */
+.app{ position:relative; z-index:2; display:grid; grid-template-columns:1fr; min-height:100dvh; }
+
+/* ---- Desktop editorial rail (progressive enhancement) ---- */
+.rail{ display:none; }
+
+@media (min-width:1080px){
+  .app{ grid-template-columns:392px 1fr; }
+  .rail{
+    display:flex; flex-direction:column;
+    padding:40px 40px 40px 44px;
+    border-right:1px solid var(--line);
+    background:var(--paper-lift);
+    position:sticky; top:0; height:100dvh;
+  }
+  .rail-brand{ display:flex; align-items:center; gap:11px; margin-bottom:52px; }
+  .rail-brand img{ width:34px; height:34px; border-radius:50%; object-fit:contain; }
+  .rail-brand .monogram{
+    width:34px; height:34px; border-radius:50%; background:var(--ink); color:var(--paper);
+    display:grid; place-items:center; font-family:var(--display); font-size:20px; line-height:1;
+  }
+  .rail-brand b{ font-family:var(--display); font-size:23px; font-weight:400; letter-spacing:-.01em; }
+  .rail-brand span{ font:400 9.5px/1 var(--mono); letter-spacing:.18em; text-transform:uppercase; color:var(--faint); display:block; margin-top:3px; }
+
+  .rail-steps{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
+  .rail-steps li{
+    display:flex; align-items:baseline; gap:13px; padding:11px 0;
+    color:var(--faint); transition:color .4s var(--ease-io);
+    border-bottom:1px solid transparent;
+  }
+  .rail-steps .num{ font:400 10px/1 var(--mono); letter-spacing:.08em; padding-top:4px; }
+  .rail-steps .nm{ font-size:15px; letter-spacing:-.01em; }
+  .rail-steps li[data-state="done"]{ color:var(--ink-soft); }
+  .rail-steps li[data-state="done"] .num::after{ content:" ·"; }
+  .rail-steps li[data-state="active"]{ color:var(--ink); }
+  .rail-steps li[data-state="active"] .nm{ font-weight:600; }
+  .rail-steps li[data-state="active"] .num{ color:var(--ink); }
+
+  .rail-foot{ margin-top:auto; padding-top:28px; border-top:1px solid var(--line); }
+  .rail-foot p{ margin:0 0 10px; font-size:12.5px; line-height:1.65; color:var(--muted); max-width:26ch; }
+  .rail-foot .seal{
+    display:inline-flex; align-items:center; gap:7px; font:400 9.5px/1 var(--mono);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+  }
+  .rail-foot .seal::before{
+    content:""; width:5px; height:5px; border-radius:50%; background:var(--ok);
+    box-shadow:0 0 0 3px rgba(30,91,65,.13);
+  }
+}
+
+/* ---- Stage ---- */
+.stage{ display:flex; flex-direction:column; min-height:100dvh; }
+
+.topbar{
+  position:sticky; top:0; z-index:30;
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  padding:calc(env(safe-area-inset-top,0px) + 14px) 20px 14px;
+  background:color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter:blur(14px) saturate(1.1);
+  -webkit-backdrop-filter:blur(14px) saturate(1.1);
+}
+@media (min-width:1080px){ .topbar{ padding-left:40px; padding-right:40px; } }
+
+.brand{ display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit; }
+.brand img{ width:30px; height:30px; border-radius:50%; object-fit:contain; display:block; }
+.brand .monogram{
+  width:30px; height:30px; border-radius:50%; background:var(--ink); color:var(--paper);
+  display:grid; place-items:center; font-family:var(--display); font-size:18px; line-height:1;
+}
+.brand b{ font-family:var(--display); font-size:20px; font-weight:400; letter-spacing:-.005em; }
+@media (min-width:1080px){ .brand{ visibility:hidden; } }
+
+.counter{
+  font:400 10.5px/1 var(--mono); letter-spacing:.13em; color:var(--muted);
+  display:flex; align-items:baseline; gap:4px; font-variant-numeric:tabular-nums;
+}
+.counter .cur{ color:var(--ink); font-weight:500; }
+.counter .sep{ color:var(--faint); }
+
+.progress{ height:1.5px; background:var(--line); position:relative; overflow:hidden; }
+.progress i{
+  position:absolute; top:0; bottom:0; left:0; width:0%;
+  background:var(--ink);
+  transition:width .62s var(--ease-spring);
+}
+
+.viewport{
+  flex:1 1 auto;
+  display:flex; justify-content:center;
+  padding:clamp(22px,5vw,54px) 20px 28px;
+  scroll-behavior:smooth;
+  overflow:hidden;
+  transition:height .5s var(--ease-spring);
+}
+@media (min-width:1080px){ .viewport{ padding:clamp(30px,4vw,64px) 40px 32px; } }
+
+.card{ width:100%; max-width:520px; }
+
+/* ============================================================================
+   STEP CONTENT
+   ========================================================================== */
+.eyebrow{
+  font:400 9.5px/1 var(--mono); letter-spacing:.2em; text-transform:uppercase;
+  color:var(--faint); margin:0 0 17px; display:flex; align-items:center; gap:9px;
+}
+.eyebrow::after{ content:""; flex:1; height:1px; background:var(--line); }
+
+.h{
+  font-family:var(--display); font-weight:400;
+  font-size:clamp(29px,7.4vw,41px); line-height:1.05; letter-spacing:-.018em;
+  margin:0 0 11px; color:var(--ink); text-wrap:balance;
+}
+.h em{ font-style:italic; }
+.sub{ margin:0 0 30px; font-size:14.5px; line-height:1.6; color:var(--muted); max-width:42ch; text-wrap:pretty; }
+
+.fields{ display:flex; flex-direction:column; gap:17px; }
+
+.field{ min-width:0; }
+.row{ display:grid; gap:13px; grid-template-columns:1fr; }
+@media (min-width:400px){ .row.two{ grid-template-columns:1fr 1fr; } }
+
+.lbl{
+  display:block; font:500 9.5px/1 var(--mono); letter-spacing:.15em; text-transform:uppercase;
+  color:var(--muted); margin-bottom:8px;
+}
+.lbl .opt-tag{ color:var(--faint); letter-spacing:.1em; }
+
+.wrap{ position:relative; display:flex; align-items:center; }
+
+.inp{
+  width:100%; height:54px; padding:0 15px;
+  border:1px solid var(--line); border-radius:var(--r);
+  background:var(--field); color:var(--ink);
+  font-family:var(--ui); font-size:16px; line-height:1; font-weight:400;
+  transition:border-color .2s var(--ease-io), box-shadow .22s var(--ease-io), background .2s;
+  appearance:none; -webkit-appearance:none;
+}
+.inp::placeholder{ color:var(--faint); }
+.inp:hover{ border-color:var(--line-strong); }
+.inp:focus{
+  outline:none; border-color:var(--ink); background:#fff;
+  box-shadow:0 0 0 3.5px rgba(19,19,18,.075);
+}
+textarea.inp{ height:auto; min-height:104px; padding:14px 15px; line-height:1.55; resize:vertical; }
+
+.inp.has-error{ border-color:var(--error); background:var(--error-wash); }
+.inp.has-error:focus{ box-shadow:0 0 0 3.5px rgba(142,47,34,.12); }
+
+.prefix{
+  position:absolute; left:15px; font-size:16px; color:var(--muted);
+  pointer-events:none; user-select:none;
+}
+.wrap.has-prefix .inp{ padding-left:40px; }
+
+.err{
+  display:flex; align-items:flex-start; gap:6px;
+  margin:7px 0 0; font-size:12.5px; line-height:1.45; color:var(--error);
+  animation:errIn .28s var(--ease-spring) both;
+}
+/* An author `display` rule beats the UA `[hidden]` rule, so state has to win explicitly. */
+[hidden]{ display:none !important; }
+.err svg{ flex:0 0 auto; margin-top:1px; }
+@keyframes errIn{ from{ opacity:0; transform:translateY(-4px); } to{ opacity:1; transform:none; } }
+
+/* ---- Option cards (real radios, custom skin) ---- */
+.opts{ display:flex; flex-direction:column; gap:9px; }
+.opts.two-col{ display:grid; grid-template-columns:1fr; gap:9px; }
+@media (min-width:430px){ .opts.two-col{ grid-template-columns:1fr 1fr; } }
+
+.opt{ position:relative; display:block; cursor:pointer; }
+.opt input{ position:absolute; opacity:0; width:1px; height:1px; }
+
+.opt-box{
+  display:flex; align-items:center; gap:12px;
+  min-height:60px; padding:13px 15px;
+  border:1px solid var(--line); border-radius:var(--r);
+  background:var(--field); color:var(--ink);
+  transition:background .26s var(--ease-io), border-color .26s var(--ease-io),
+             color .26s var(--ease-io), transform .2s var(--ease-spring);
+}
+.opt:hover .opt-box{ border-color:var(--line-strong); }
+.opt:active .opt-box{ transform:scale(.988); }
+
+.opt-txt{ flex:1; min-width:0; }
+.opt-title{ display:block; font-size:15px; font-weight:500; letter-spacing:-.008em; }
+.opt-sub{ display:block; font-size:12.5px; color:var(--muted); margin-top:2px; transition:color .26s; }
+
+.tick{
+  flex:0 0 auto; width:21px; height:21px; border-radius:50%;
+  border:1px solid var(--line-strong); display:grid; place-items:center;
+  transition:background .26s var(--ease-io), border-color .26s var(--ease-io);
+}
+.tick svg{ width:11px; height:11px; opacity:0; transform:scale(.4); transition:opacity .2s, transform .3s var(--ease-pop); }
+
+.opt input:checked + .opt-box{
+  background:var(--ink); border-color:var(--ink); color:var(--paper);
+  box-shadow:0 6px 22px -12px rgba(19,19,18,.6);
+}
+.opt input:checked + .opt-box .opt-sub{ color:rgba(247,246,242,.62); }
+.opt input:checked + .opt-box .tick{ background:var(--paper); border-color:var(--paper); }
+.opt input:checked + .opt-box .tick svg{ opacity:1; transform:none; color:var(--ink); }
+
+.opt input:focus-visible + .opt-box{
+  outline:2px solid var(--ink); outline-offset:2px;
+}
+
+.opt.errored .opt-box{ border-color:var(--error); }
+.opt-box.is-error{ border-color:var(--error); background:var(--error-wash); }
+
+/* ---- Telegram handle reveal ---- */
+.reveal{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .46s var(--ease-spring), opacity .3s; opacity:0; }
+.reveal.open{ grid-template-rows:1fr; opacity:1; }
+.reveal > .reveal-in{ overflow:hidden; min-height:0; }
+.reveal .reveal-pad{ padding-top:11px; }
+
+/* ---- Disclosure ---- */
+.disclose{
+  display:flex; align-items:center; gap:11px; width:100%;
+  padding:14px 15px; margin-top:2px;
+  background:none; border:1px dashed var(--line-strong); border-radius:var(--r);
+  color:var(--ink-soft); font-family:var(--ui); font-size:14px; font-weight:500;
+  cursor:pointer; text-align:left;
+  transition:border-color .24s, background .24s, color .24s;
+}
+.disclose:hover{ border-color:var(--ink); background:var(--wash); color:var(--ink); }
+.disclose:focus-visible{ outline:2px solid var(--ink); outline-offset:2px; }
+.plus{ position:relative; width:13px; height:13px; flex:0 0 auto; }
+.plus i{ position:absolute; background:currentColor; border-radius:1px; transition:transform .38s var(--ease-spring), opacity .3s; }
+.plus i:first-child{ left:0; top:6px; width:13px; height:1.4px; }
+.plus i:last-child{ left:6px; top:0; width:1.4px; height:13px; }
+.disclose[aria-expanded="true"] .plus i:last-child{ transform:scaleY(0); opacity:0; }
+.disclose .hint{
+  margin-left:auto; font:400 9px/1 var(--mono); letter-spacing:.14em;
+  text-transform:uppercase; color:var(--faint);
+}
+
+.more{ display:grid; grid-template-rows:0fr; transition:grid-template-rows .48s var(--ease-spring); }
+.more.open{ grid-template-rows:1fr; }
+.more > .more-in{ overflow:hidden; min-height:0; }
+.more-fields{ display:flex; flex-direction:column; gap:17px; padding-top:17px; }
+
+/* ---- State picker trigger ---- */
+.pick{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  width:100%; height:54px; padding:0 15px;
+  border:1px solid var(--line); border-radius:var(--r); background:var(--field);
+  color:var(--ink); font-family:var(--ui); font-size:16px; text-align:left; cursor:pointer;
+  transition:border-color .2s, box-shadow .22s, background .2s;
+}
+.pick:hover{ border-color:var(--line-strong); }
+.pick:focus-visible{ outline:none; border-color:var(--ink); box-shadow:0 0 0 3.5px rgba(19,19,18,.075); }
+.pick.is-empty{ color:var(--faint); }
+.pick svg{ flex:0 0 auto; color:var(--muted); transition:transform .3s var(--ease-spring); }
+.pick[aria-expanded="true"] svg{ transform:rotate(180deg); }
+
+/* ---- Consent ---- */
+.consent{ display:flex; align-items:flex-start; gap:12px; margin-top:22px; cursor:pointer; }
+.consent input{ position:absolute; opacity:0; width:1px; height:1px; }
+.cbox{
+  flex:0 0 auto; width:22px; height:22px; margin-top:1px;
+  border:1.4px solid var(--line-strong); border-radius:6px; background:var(--field);
+  display:grid; place-items:center;
+  transition:background .24s var(--ease-io), border-color .24s var(--ease-io), transform .2s var(--ease-spring);
+}
+.cbox svg{ width:12px; height:12px; opacity:0; transform:scale(.5); transition:opacity .18s, transform .3s var(--ease-pop); }
+.consent input:checked + .cbox{ background:var(--ink); border-color:var(--ink); }
+.consent input:checked + .cbox svg{ opacity:1; transform:none; color:var(--paper); }
+.consent input:focus-visible + .cbox{ outline:2px solid var(--ink); outline-offset:2px; }
+.consent.errored .cbox{ border-color:var(--error); background:var(--error-wash); }
+.consent-txt{ font-size:12.5px; line-height:1.6; color:var(--muted); }
+.consent-txt a{ color:var(--ink); text-underline-offset:2px; text-decoration-color:var(--line-strong); }
+.consent-txt a:hover{ text-decoration-color:var(--ink); }
+
+/* ---- Privacy micro-note ---- */
+.note{
+  display:flex; align-items:flex-start; gap:8px; margin-top:24px;
+  font-size:11.5px; line-height:1.55; color:var(--faint);
+}
+.note svg{ flex:0 0 auto; margin-top:1px; }
+
+/* ============================================================================
+   FOOTER NAV
+   ========================================================================== */
+.nav{
+  position:sticky; bottom:0; z-index:30;
+  display:flex; align-items:center; gap:10px;
+  padding:14px 20px calc(env(safe-area-inset-bottom,0px) + 16px);
+  background:linear-gradient(to top, var(--paper) 62%, color-mix(in srgb, var(--paper) 0%, transparent));
+}
+@media (min-width:1080px){ .nav{ padding-left:40px; padding-right:40px; } }
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  height:56px; border-radius:var(--pill); border:0; cursor:pointer;
+  font-family:var(--ui); font-size:15px; font-weight:500; letter-spacing:-.005em;
+  transition:transform .22s var(--ease-spring), background .24s, color .24s, box-shadow .24s, opacity .2s;
+  -webkit-tap-highlight-color:transparent;
+}
+.btn:focus-visible{ outline:2px solid var(--ink); outline-offset:2.5px; }
+
+.btn-primary{
+  flex:1; max-width:340px; margin-left:auto;
+  background:var(--ink); color:var(--paper);
+  box-shadow:0 10px 26px -16px rgba(19,19,18,.85);
+}
+.btn-primary:hover{ transform:translateY(-1.5px); box-shadow:0 16px 32px -18px rgba(19,19,18,.9); }
+.btn-primary:active{ transform:scale(.978); }
+.btn-primary .arrow{ transition:transform .3s var(--ease-spring); }
+.btn-primary:hover .arrow{ transform:translateX(3px); }
+.btn-primary[disabled]{ opacity:.45; cursor:not-allowed; transform:none; box-shadow:none; }
+
+.btn-ghost{
+  background:transparent; color:var(--muted); padding:0 16px; flex:0 0 auto;
+}
+.btn-ghost:hover{ color:var(--ink); background:var(--wash); }
+.btn-ghost .chev{ transition:transform .3s var(--ease-spring); }
+.btn-ghost:hover .chev{ transform:translateX(-3px); }
+.btn-ghost[hidden]{ display:none; }
+
+/* ============================================================================
+   STEP ANIMATION
+   ========================================================================== */
+.step{ display:none; }
+.step.active{ display:block; }
+
+.step.active .stag{ animation:stagIn .62s var(--ease-spring) both; animation-delay:calc(var(--i,0) * 54ms); }
+@keyframes stagIn{
+  from{ opacity:0; transform:translate3d(0,15px,0); }
+  to  { opacity:1; transform:none; }
+}
+
+/* Direction awareness: outgoing feels like it leaves the way you came from. */
+.step.active.dir-fwd .stag{ animation-name:stagFwd; }
+.step.active.dir-back .stag{ animation-name:stagBack; }
+@keyframes stagFwd{
+  from{ opacity:0; transform:translate3d(13px,11px,0); }
+  to  { opacity:1; transform:none; }
+}
+@keyframes stagBack{
+  from{ opacity:0; transform:translate3d(-13px,11px,0); }
+  to  { opacity:1; transform:none; }
+}
+
+/* Small nudge on invalid — brief, small, never the only signal. */
+@keyframes nudge{
+  25%{ transform:translateX(-3px); }
+  60%{ transform:translateX(2px); }
+  100%{ transform:none; }
+}
+.nudge{ animation:nudge .22s var(--ease-io); }
+
+/* ============================================================================
+   STATE SHEET
+   ========================================================================== */
+.sheet{
+  position:fixed; inset:0; z-index:90;
+  display:flex; align-items:flex-end; justify-content:center;
+  background:rgba(19,19,18,.34);
+  backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px);
+  opacity:0; pointer-events:none; visibility:hidden;
+  transition:opacity .3s var(--ease-io), visibility 0s linear .3s;
+}
+.sheet.open{ opacity:1; pointer-events:auto; visibility:visible; transition:opacity .3s var(--ease-io), visibility 0s; }
+@media (min-width:640px){ .sheet{ align-items:center; } }
+
+.sheet-panel{
+  width:100%; max-width:480px; max-height:82dvh;
+  display:flex; flex-direction:column;
+  background:var(--paper-lift);
+  border-radius:var(--r-lg) var(--r-lg) 0 0;
+  border-top:1px solid var(--line);
+  transform:translateY(22px); opacity:.7;
+  transition:transform .42s var(--ease-spring), opacity .3s;
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+.sheet.open .sheet-panel{ transform:none; opacity:1; }
+@media (min-width:640px){
+  .sheet-panel{ border-radius:var(--r-lg); border:1px solid var(--line); max-height:70dvh; }
+}
+
+.sheet-head{
+  display:flex; align-items:center; gap:10px;
+  padding:14px 16px 12px; border-bottom:1px solid var(--line);
+}
+.sheet-search{
+  flex:1; height:44px; padding:0 13px; border:1px solid var(--line); border-radius:var(--r-sm);
+  background:var(--field); font-family:var(--ui); font-size:16px; color:var(--ink);
+}
+.sheet-search:focus{ outline:none; border-color:var(--ink); box-shadow:0 0 0 3px rgba(19,19,18,.07); }
+.sheet-cancel{
+  background:none; border:0; color:var(--muted); font-family:var(--ui); font-size:14px;
+  font-weight:500; cursor:pointer; padding:10px 4px;
+}
+.sheet-cancel:hover{ color:var(--ink); }
+
+.sheet-list{ list-style:none; margin:0; padding:6px; overflow-y:auto; overscroll-behavior:contain; flex:1; }
+.sheet-list li{
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  padding:13px 12px; border-radius:var(--r-sm); cursor:pointer;
+  font-size:15.5px; color:var(--ink-soft);
+  transition:background .16s, color .16s;
+}
+.sheet-list li:hover{ background:var(--wash); color:var(--ink); }
+.sheet-list li[aria-selected="true"]{ background:var(--ink); color:var(--paper); }
+.sheet-list li[aria-selected="true"] svg{ opacity:1; }
+.sheet-list li svg{ opacity:0; width:13px; height:13px; }
+.sheet-list li.act{ background:var(--wash-2); color:var(--ink); }
+.sheet-empty{ padding:26px 12px; text-align:center; color:var(--faint); font-size:14px; }
+
+/* ============================================================================
+   SEND / SUCCESS
+   ========================================================================== */
+.send{
+  position:fixed; inset:0; z-index:95;
+  background:var(--ink); color:var(--paper);
+  display:grid; place-items:center;
+  clip-path:circle(0% at 50% 102%);
+  transition:clip-path .72s var(--ease-spring);
+  pointer-events:none;
+}
+.send.on{ clip-path:circle(155% at 50% 102%); pointer-events:auto; }
+.send-in{ display:flex; flex-direction:column; align-items:center; gap:22px; transform:translateY(10px); opacity:0; transition:transform .5s var(--ease-spring) .25s, opacity .5s .25s; }
+.send.on .send-in{ transform:none; opacity:1; }
+.send-label{ font:400 9.5px/1 var(--mono); letter-spacing:.22em; text-transform:uppercase; color:rgba(247,246,242,.5); }
+
+.ring{ position:relative; width:92px; height:92px; display:grid; place-items:center; }
+.ring span{
+  position:absolute; inset:0; border-radius:50%;
+  border:1px solid rgba(247,246,242,.18);
+}
+.ring span:nth-child(2){ animation:ping 2.1s var(--ease-io) infinite; }
+.ring span:nth-child(3){ animation:ping 2.1s var(--ease-io) .7s infinite; }
+@keyframes ping{ 0%{ transform:scale(.72); opacity:.55; } 100%{ transform:scale(1.55); opacity:0; } }
+.ring .core{ position:relative; width:56px; height:56px; border-radius:50%; background:var(--paper); display:grid; place-items:center; }
+.ring .core svg{ width:26px; height:26px; color:var(--ink); }
+.ring .core path{ stroke-dasharray:30; stroke-dashoffset:30; animation:draw .5s var(--ease-io) .5s forwards; }
+@keyframes draw{ to{ stroke-dashoffset:0; } }
+
+/* Confirmation view */
+.done-wrap{ text-align:center; padding:clamp(20px,7vw,54px) 0 0; }
+.done-mark{
+  width:66px; height:66px; margin:0 auto 26px; border-radius:50%;
+  background:var(--ink); color:var(--paper); display:grid; place-items:center;
+  animation:popIn .55s var(--ease-pop) both;
+}
+@keyframes popIn{ from{ opacity:0; transform:scale(.55); } to{ opacity:1; transform:none; } }
+.done-mark svg{ width:30px; height:30px; }
+.done-mark path{ stroke-dasharray:30; stroke-dashoffset:30; animation:draw .45s var(--ease-io) .28s forwards; }
+
+.done-badge{
+  display:inline-flex; align-items:center; gap:8px;
+  font:400 9.5px/1 var(--mono); letter-spacing:.18em; text-transform:uppercase;
+  color:var(--ok); border:1px solid rgba(30,91,65,.22); background:rgba(30,91,65,.055);
+  padding:7px 12px; border-radius:var(--pill); margin-bottom:22px;
+}
+.done-badge i{ width:5px; height:5px; border-radius:50%; background:var(--ok); }
+
+.done-wrap .h{ font-size:clamp(31px,8vw,44px); margin-bottom:14px; }
+.done-wrap .sub{ margin-left:auto; margin-right:auto; text-align:center; }
+.done-actions{ display:flex; flex-direction:column; align-items:center; gap:14px; margin-top:34px; }
+
+/* ============================================================================
+   REVIEW TOOLBAR
+   ========================================================================== */
+.tools{
+  position:fixed; z-index:70;
+  left:12px; bottom:calc(env(safe-area-inset-bottom,0px) + 92px);
+  display:flex; align-items:center; gap:2px;
+  padding:4px;
+  background:color-mix(in srgb, var(--paper-lift) 92%, transparent);
+  border:1px solid var(--line); border-radius:var(--pill);
+  box-shadow:0 8px 22px -14px rgba(19,19,18,.4);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  transition:opacity .3s;
+}
+.tool-btn{
+  height:30px; padding:0 11px; border-radius:var(--pill); border:0; background:none;
+  color:var(--muted); font:400 10px/1 var(--mono); letter-spacing:.1em; text-transform:uppercase;
+  cursor:pointer; transition:background .2s, color .2s;
+}
+.tool-btn:hover{ color:var(--ink); background:var(--wash); }
+.tool-btn[aria-pressed="true"]{ background:var(--ink); color:var(--paper); }
+.tool-sep{ width:1px; height:16px; background:var(--line); margin:0 2px; }
+
+.notes{
+  position:fixed; z-index:71; left:12px; bottom:calc(env(safe-area-inset-bottom,0px) + 132px);
+  width:min(330px, calc(100vw - 24px));
+  max-height:min(58dvh, 460px); overflow-y:auto;
+  background:var(--paper-lift); border:1px solid var(--line); border-radius:var(--r);
+  padding:16px 17px;
+  font-size:12.5px; line-height:1.6; color:var(--muted);
+  box-shadow:0 18px 44px -26px rgba(19,19,18,.55);
+  display:none;
+}
+.notes.open{ display:block; animation:stagIn .3s var(--ease-spring) both; }
+.notes h4{
+  margin:0 0 10px; font:500 9.5px/1 var(--mono); letter-spacing:.16em;
+  text-transform:uppercase; color:var(--ink);
+}
+.notes ul{ margin:0; padding-left:15px; }
+.notes li{ margin-bottom:7px; }
+.notes b{ color:var(--ink-soft); font-weight:600; }
+
+/* ============================================================================
+   MOTION OFF
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.001ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.001ms !important;
+  }
+}
+html[data-motion="off"] *, html[data-motion="off"] *::before, html[data-motion="off"] *::after{
+  animation-duration:.001ms !important;
+  animation-iteration-count:1 !important;
+  transition-duration:.001ms !important;
+}
+html[data-motion="off"] .send{ clip-path:circle(155% at 50% 102%); }
+</style>
+</head>
+<body>
+
+<div class="grain" aria-hidden="true"></div>
+
+<div class="app">
+
+  <!-- ==================== DESKTOP RAIL ==================== -->
+  <aside class="rail" aria-hidden="true">
+    <div class="rail-brand">
+      <img src="logo.png" alt="" onerror="this.style.display='none';this.nextElementSibling && null;">
+      <div>
+        <b>Fynex</b>
+        <span>Partner Application</span>
+      </div>
+    </div>
+    <ol class="rail-steps" id="railSteps"></ol>
+    <div class="rail-foot">
+      <p>Every application is reviewed by a person and kept strictly confidential.</p>
+      <span class="seal">Reviewed within 24 hours</span>
+    </div>
+  </aside>
+
+  <!-- ==================== STAGE ==================== -->
+  <div class="stage">
+
+    <header class="topbar">
+      <a class="brand" href="#" onclick="return false">
+        <img src="logo.png" alt="Fynex" onerror="this.style.display='none'">
+        <b>Fynex</b>
+      </a>
+      <div class="counter" id="counter" aria-hidden="true">
+        <span class="cur">01</span><span class="sep">/</span><span class="tot">05</span>
+      </div>
+    </header>
+
+    <div class="progress" role="progressbar" id="progress" aria-valuemin="1" aria-valuemax="5" aria-valuenow="1" aria-label="Application progress">
+      <i></i>
+    </div>
+
+    <main class="viewport" id="viewport">
+      <div class="card">
+        <form id="form" novalidate autocomplete="on"></form>
+      </div>
+    </main>
+
+    <footer class="nav" id="nav">
+      <button type="button" class="btn btn-ghost" id="back" hidden>
+        <svg class="chev" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Back
+      </button>
+      <button type="button" class="btn btn-primary" id="next">
+        <span id="nextLabel">Continue</span>
+        <svg class="arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </button>
+    </footer>
+
+  </div>
+</div>
+
+<!-- ==================== STATE SHEET ==================== -->
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-label="Select your state" aria-hidden="true" inert>
+  <div class="sheet-panel">
+    <div class="sheet-head">
+      <input class="sheet-search" id="stateSearch" type="text" autocomplete="off" placeholder="Search states…" aria-controls="stateList" aria-autocomplete="list" role="combobox" aria-expanded="true">
+      <button type="button" class="sheet-cancel" id="sheetCancel">Cancel</button>
+    </div>
+    <ul class="sheet-list" id="stateList" role="listbox" aria-label="US states"></ul>
+  </div>
+</div>
+
+<!-- ==================== SEND OVERLAY ==================== -->
+<div class="send" id="send" aria-hidden="true">
+  <div class="send-in">
+    <div class="ring">
+      <span></span><span></span><span></span>
+      <div class="core">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+      </div>
+    </div>
+    <span class="send-label" id="sendLabel">Sending application</span>
+  </div>
+</div>
+
+<!-- ==================== REVIEW TOOLBAR ==================== -->
+<div class="tools" role="group" aria-label="Mock review controls">
+  <button type="button" class="tool-btn" id="t5" aria-pressed="true" title="Location gets its own step">5 steps</button>
+  <button type="button" class="tool-btn" id="t4" aria-pressed="false" title="Location folds into the details disclosure">4 steps</button>
+  <div class="tool-sep" aria-hidden="true"></div>
+  <button type="button" class="tool-btn" id="tMotion" aria-pressed="true" title="Toggle animation">Motion</button>
+  <button type="button" class="tool-btn" id="tNotes" aria-pressed="false" title="Design rationale">Notes</button>
+</div>
+
+<aside class="notes" id="notes">
+  <h4>Why it's built this way</h4>
+  <ul>
+    <li><b>5 steps, not 13 fields.</b> Baymard's benchmark finds total field count hurts completion far more than step count — but only if each step stays effortless. Every step here asks for two things.</li>
+    <li><b>Optional fields are disclosed, not deleted.</b> City, state, message and referral sit behind one click, so they cost the 90% nothing.</li>
+    <li><b>Native radios, custom skin.</b> Employment and credit score are option cards, so it's one tap with no keyboard — and arrow-key navigation works for free.</li>
+    <li><b>Validation on blur, then live.</b> Errors persist until fixed, announce through a polite live region, and use <code>aria-invalid</code> + <code>aria-describedby</code>. Never colour alone.</li>
+    <li><b>Mobile specifics.</b> 16px inputs (stops iOS zoom), 54px targets, <code>autocomplete</code> on every field, the right <code>inputmode</code> per field, and safe-area insets.</li>
+    <li><b>One hero moment.</b> Everything else is restrained, so the ink wipe and drawn check on submit land hard.</li>
+    <li><b>Motion is opt-out.</b> Honours <code>prefers-reduced-motion</code>; the Motion toggle here lets you preview that.</li>
+    <li><b>Field names match your current payload</b> exactly — porting this back into <code>Apply.tsx</code> is mechanical.</li>
+  </ul>
+</aside>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================================
+   DATA  (field names deliberately identical to src/pages/Apply.tsx)
+   ========================================================================== */
+const S = {
+  firstName:"", lastName:"", email:"", phone:"",
+  city:"", state:"",
+  employed:"", creditScore:"",
+  message:"", referralCode:"",
+  contactPref:"", telegramHandle:"", agree:false
+};
+
+const EMPLOYMENT = [
+  {v:"employed-full", t:"Employed full-time", s:"In a permanent role"},
+  {v:"employed-part", t:"Employed part-time", s:"Under 30 hours a week"},
+  {v:"self-employed", t:"Self-employed", s:"Business owner or contractor"},
+  {v:"other",          t:"Other",             s:"Something else entirely"}
+];
+
+const CREDIT = [
+  {v:"750+",     t:"750+",     s:"Excellent"},
+  {v:"700-749",  t:"700–749",  s:"Very good"},
+  {v:"600-699",  t:"600–699",  s:"Good"},
+  {v:"below-600",t:"Below 600",s:"Still building"}
+];
+
+const METHODS = [
+  {v:"whatsapp", t:"WhatsApp", s:"Usually the fastest reply", icon:'<path d="M17.5 14.4c-.3-.1-1.8-.9-2-.9-.3-.1-.5-.2-.7.1-.2.3-.8 1-.9 1.2-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6l.4-.5c.2-.2.2-.3.3-.5.1-.2 0-.4 0-.5 0-.1-.7-1.6-.9-2.2-.2-.6-.5-.5-.7-.5h-.6c-.2 0-.5.1-.8.4-.3.3-1 1-1 2.5s1.1 2.9 1.2 3.1c.1.2 2.1 3.2 5.1 4.5.7.3 1.3.5 1.7.6.7.2 1.4.2 1.9.1.6-.1 1.8-.7 2-1.4.2-.7.2-1.3.2-1.4-.1-.1-.3-.2-.6-.4z"/><path d="M12 2C6.5 2 2 6.5 2 12c0 1.9.5 3.7 1.4 5.2L2 22l5-1.4c1.5.8 3.2 1.3 5 1.3 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.2c-1.6 0-3.2-.4-4.5-1.2l-.3-.2-3 .8.8-2.9-.2-.3C4 15 3.6 13.5 3.6 12 3.6 7.4 7.4 3.6 12 3.6S20.4 7.4 20.4 12 16.6 20.2 12 20.2z"/>'},
+  {v:"telegram", t:"Telegram", s:"We'll need your @handle", icon:'<path d="M11.9 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 11.9 0zm5 7.2c.1 0 .3 0 .5.1a.5.5 0 0 1 .2.3v.5c-.2 1.9-1 6.5-1.4 8.6-.2.9-.5 1.2-.8 1.2-.7.1-1.2-.5-1.9-.9-1.1-.7-1.7-1.1-2.7-1.8-1.2-.8-.4-1.2.3-1.9.2-.2 3.2-3 3.3-3.2v-.2c0-.1-.2 0-.2 0-.1 0-1.8 1.1-5.1 3.3-.5.3-.9.5-1.3.5-.4 0-1.3-.2-1.9-.4-.8-.2-1.3-.4-1.3-.8 0-.2.3-.4.9-.7 3.5-1.5 5.8-2.5 7-3 3.3-1.4 4-1.6 4.5-1.6z"/>'},
+  {v:"email", t:"Email", s:"Confirmation to your inbox", icon:'<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>'}
+];
+
+const STATES = ["Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","District of Columbia","Florida","Georgia","Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland","Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey","New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina","South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming"];
+
+/* ============================================================================
+   STEP DEFINITIONS
+   ========================================================================== */
+const STEPS = {
+  name:    { label:"Identity",       eyebrow:"01 — Identity",       title:"Who are we <em>speaking</em> with?",
+             sub:"Use the name you'd like us to use when we're in touch." },
+  contact: { label:"Contact",        eyebrow:"02 — Contact",        title:"How do we reach <em>you</em> directly?",
+             sub:"Only used to follow up on this application. No lists, no resale." },
+  location:{ label:"Location",       eyebrow:"03 — Location",       title:"Where are you <em>based?</em>",
+             sub:"Optional. It helps us route you to the right regional team." },
+  qual:    { label:"Qualification",  eyebrow:"04 — Qualification",  title:"A little about your <em>situation.</em>",
+             sub:"This shapes which partnership options we can actually offer you." },
+  reach:   { label:"Follow-up",      eyebrow:"05 — Follow-up",      title:"Finally — how should we <em>follow up?</em>",
+             sub:"Pick the channel you genuinely check." }
+};
+
+const VARIANTS = {
+  5: [
+    { id:"name" }, { id:"contact" }, { id:"location" }, { id:"qual" }, { id:"reach", locationInDisclosure:false }
+  ],
+  4: [
+    { id:"name" }, { id:"contact" }, { id:"qual" }, { id:"reach", locationInDisclosure:true }
+  ]
+};
+
+/* ============================================================================
+   TEMPLATES
+   ========================================================================== */
+const ICON_ALERT = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9.5"/><path d="M12 7.5v5.5M12 16.6v.1"/></svg>';
+const ICON_LOCK  = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="4" y="10.5" width="16" height="10.5" rx="2.2"/><path d="M8 10.5V7.6a4 4 0 0 1 8 0v2.9"/></svg>';
+const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+
+function fieldHTML(o){
+  return `
+  <div class="field" data-key="${o.key}">
+    <label class="lbl" for="in-${o.key}">${o.label}${o.optional ? ' <span class="opt-tag">· optional</span>' : ''}</label>
+    <div class="wrap ${o.prefix ? 'has-prefix' : ''}">
+      ${o.prefix ? `<span class="prefix">${o.prefix}</span>` : ''}
+      <input class="inp" id="in-${o.key}" name="${o.key}" type="${o.type||'text'}"
+        ${o.inputmode ? `inputmode="${o.inputmode}"` : ''}
+        ${o.autocomplete ? `autocomplete="${o.autocomplete}"` : ''}
+        ${o.maxlength ? `maxlength="${o.maxlength}"` : ''}
+        placeholder="${o.placeholder||''}"
+        value="${(S[o.key]||'').replace(/"/g,'&quot;')}"
+        aria-describedby="err-${o.key}">
+    </div>
+    <p class="err" id="err-${o.key}" hidden>${ICON_ALERT}<span></span></p>
+  </div>`;
+}
+
+function optionHTML(group, items, cols){
+  return `<div class="opts ${cols===2?'two-col':''}" role="radiogroup" aria-label="${group}">
+    ${items.map(it=>`
+      <label class="opt" data-opt="${it.v}">
+        <input type="radio" name="${group}" value="${it.v}" ${S[group]===it.v?'checked':''}>
+        <span class="opt-box">
+          <span class="opt-txt">
+            <span class="opt-title">${it.t}</span>
+            ${it.s?`<span class="opt-sub">${it.s}</span>`:''}
+          </span>
+          <span class="tick">${ICON_CHECK}</span>
+        </span>
+      </label>`).join('')}
+  </div>
+  <p class="err" id="err-${group}" hidden>${ICON_ALERT}<span></span></p>`;
+}
+
+function locationFields(){
+  return `
+  <div class="row two">
+    <div class="field" data-key="state">
+      <label class="lbl" for="pick-state">State</label>
+      <button type="button" class="pick ${S.state?'':'is-empty'}" id="pick-state" aria-haspopup="dialog" aria-expanded="false">
+        <span>${S.state || 'Select…'}</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+      </button>
+      <p class="err" id="err-state" hidden>${ICON_ALERT}<span></span></p>
+    </div>
+    ${fieldHTML({key:"city", label:"City", placeholder:"Los Angeles", autocomplete:"address-level2"})}
+  </div>`;
+}
+
+function stepInner(def){
+  const m = STEPS[def.id];
+  let body = '';
+
+  if (def.id === "name"){
+    body = `<div class="row two">
+      ${fieldHTML({key:"firstName", label:"First name", placeholder:"John", autocomplete:"given-name"})}
+      ${fieldHTML({key:"lastName",  label:"Last name",  placeholder:"Smith", autocomplete:"family-name"})}
+    </div>`;
+  }
+
+  if (def.id === "contact"){
+    body = `
+      ${fieldHTML({key:"email", label:"Email address", type:"email", inputmode:"email", autocomplete:"email", placeholder:"john@example.com"})}
+      ${fieldHTML({key:"phone", label:"US phone number", type:"tel", inputmode:"tel", autocomplete:"tel", prefix:"+1", placeholder:"(555) 000-0000", maxlength:"14"})}
+      <p class="note">${ICON_LOCK} Your details are used only to review this application.</p>`;
+  }
+
+  if (def.id === "location"){
+    body = `${locationFields()}
+      <p class="note">${ICON_LOCK} You can leave this blank and continue.</p>`;
+  }
+
+  if (def.id === "qual"){
+    body = `
+      <div class="field">
+        <span class="lbl" id="lb-employed">Employment status</span>
+        ${optionHTML("employed", EMPLOYMENT, 2)}
+      </div>
+      <div class="field" style="margin-top:21px">
+        <span class="lbl" id="lb-creditScore">Approximate credit score</span>
+        ${optionHTML("creditScore", CREDIT, 2)}
+      </div>`;
+  }
+
+  if (def.id === "reach"){
+    body = `
+      <div class="field">
+        <span class="lbl">Preferred contact method</span>
+        <div class="opts" role="radiogroup" aria-label="Preferred contact method">
+          ${METHODS.map(mm=>`
+            <label class="opt" data-method="${mm.v}">
+              <input type="radio" name="contactPref" value="${mm.v}" ${S.contactPref===mm.v?'checked':''}>
+              <span class="opt-box">
+                <span class="tick">${ICON_CHECK}</span>
+                <span class="opt-txt">
+                  <span class="opt-title">${mm.t}</span>
+                  <span class="opt-sub">${mm.s}</span>
+                </span>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex:0 0 auto;opacity:.75">${mm.icon}</svg>
+              </span>
+            </label>`).join('')}
+        </div>
+        <div class="reveal ${S.contactPref==='telegram'?'open':''}" id="tgReveal">
+          <div class="reveal-in"><div class="reveal-pad">
+            ${fieldHTML({key:"telegramHandle", label:"Telegram username", placeholder:"@yourhandle", autocomplete:"off"})}
+          </div></div>
+        </div>
+        <p class="err" id="err-contactPref" hidden>${ICON_ALERT}<span></span></p>
+      </div>
+
+      <button type="button" class="disclose" id="disclose" aria-expanded="false" aria-controls="more">
+        <span class="plus" aria-hidden="true"><i></i><i></i></span>
+        Add more details
+        <span class="hint">optional</span>
+      </button>
+      <div class="more" id="more">
+        <div class="more-in"><div class="more-fields">
+          ${def.locationInDisclosure ? locationFields() : ''}
+          <div class="field" data-key="message">
+            <label class="lbl" for="in-message">Anything we should know? <span class="opt-tag">· optional</span></label>
+            <textarea class="inp" id="in-message" name="message" rows="4" placeholder="Tell us a little about yourself and what you're looking for…">${(S.message||'').replace(/</g,'&lt;')}</textarea>
+            <p class="err" id="err-message" hidden>${ICON_ALERT}<span></span></p>
+          </div>
+          ${fieldHTML({key:"referralCode", label:"Referral code", optional:true, placeholder:"e.g. A1B2C3", autocomplete:"off", maxlength:"12"})}
+        </div></div>
+      </div>
+
+      <label class="consent" id="consentWrap">
+        <input type="checkbox" name="agree" id="agree" ${S.agree?'checked':''}>
+        <span class="cbox">${ICON_CHECK}</span>
+        <span class="consent-txt">
+          I confirm the information above is accurate and agree to the
+          <a href="#" onclick="return false">Terms</a> and <a href="#" onclick="return false">Privacy Policy</a>.
+        </span>
+      </label>
+      <p class="err" id="err-agree" style="margin-left:34px" hidden>${ICON_ALERT}<span></span></p>`;
+  }
+
+  return `
+    <p class="eyebrow stag" style="--i:0">${m.eyebrow}</p>
+    <h2 class="h stag" style="--i:1" tabindex="-1" id="step-title">${m.title}</h2>
+    <p class="sub stag" style="--i:2">${m.sub}</p>
+    <div class="fields stag" style="--i:3">${body}</div>`;
+}
+
+/* ============================================================================
+   STATE / REFS
+   ========================================================================== */
+let variant = 5;
+let steps = VARIANTS[variant];
+let index = 0;
+
+const form     = document.getElementById('form');
+const viewport = document.getElementById('viewport');
+const counter  = document.getElementById('counter');
+const progress = document.getElementById('progress');
+const railList = document.getElementById('railSteps');
+const backBtn  = document.getElementById('back');
+const nextBtn  = document.getElementById('next');
+const nextLbl  = document.getElementById('nextLabel');
+const sendEl   = document.getElementById('send');
+const sheet    = document.getElementById('sheet');
+const stateSearch = document.getElementById('stateSearch');
+const stateList   = document.getElementById('stateList');
+const live = document.createElement('div');
+live.className = 'sr-only';
+live.setAttribute('aria-live','polite');
+document.body.appendChild(live);
+
+/* ============================================================================
+   RENDER
+   ========================================================================== */
+function renderAll(dir){
+  steps = VARIANTS[variant];
+
+  const prevH = viewport.getBoundingClientRect().height;
+  viewport.style.height = prevH + 'px';
+
+  form.innerHTML = steps.map((def, i) => `
+    <section class="step ${i===index?'active ':''}${dir==='back'?'dir-back':dir==='fwd'?'dir-fwd':''}"
+             data-step="${def.id}" ${i===index?'':'hidden'} aria-labelledby="step-title">
+      ${stepInner(def)}
+    </section>`).join('');
+
+  // height morph
+  const active = form.querySelector('.step.active');
+  const newH = active ? active.getBoundingClientRect().height : prevH;
+  requestAnimationFrame(() => {
+    viewport.style.height = newH + 'px';
+    window.setTimeout(() => { viewport.style.height = ''; }, 560);
+  });
+
+  updateChrome();
+  bindStep();
+}
+
+function updateChrome(){
+  const total = steps.length;
+  const m = STEPS[steps[index].id];
+
+  counter.querySelector('.cur').textContent = String(index+1).padStart(2,'0');
+  counter.querySelector('.tot').textContent = String(total).padStart(2,'0');
+
+  const pct = ((index+1)/total)*100;
+  progress.querySelector('i').style.width = pct + '%';
+  progress.setAttribute('aria-valuenow', String(index+1));
+  progress.setAttribute('aria-valuemax', String(total));
+  progress.setAttribute('aria-valuetext', `Step ${index+1} of ${total}: ${m.label}`);
+
+  backBtn.hidden = index === 0;
+  nextLbl.textContent = index === total-1 ? 'Submit application' : 'Continue';
+
+  railList.innerHTML = steps.map((d,i)=>{
+    const st = i < index ? 'done' : i === index ? 'active' : 'todo';
+    return `<li data-state="${st}"><span class="num">${String(i+1).padStart(2,'0')}</span><span class="nm">${STEPS[d.id].label}</span></li>`;
+  }).join('');
+
+  const t = form.querySelector('.step.active #step-title');
+  if (t) t.focus({ preventScroll:true });
+}
+
+/* ============================================================================
+   BINDING (delegated where practical)
+   ========================================================================== */
+function bindStep(){
+  const active = form.querySelector('.step.active');
+  if (!active) return;
+
+  // Text inputs
+  active.querySelectorAll('input.inp, textarea.inp').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      let v = el.value;
+      if (el.name === 'phone') { v = formatPhone(v); el.value = v; }
+      if (el.name === 'referralCode') { v = v.toUpperCase().replace(/[^A-Z0-9-]/g,''); el.value = v; }
+      S[el.name] = v;
+      if (el.classList.contains('has-error')) validateField(el.name, active, true);
+    });
+    el.addEventListener('blur', ()=> validateField(el.name, active, true));
+  });
+
+  // Radio groups → option cards
+  active.querySelectorAll('input[type="radio"]').forEach(r=>{
+    r.addEventListener('change', ()=>{
+      S[r.name] = r.value;
+      clearError(r.name, active);
+      if (r.name === 'contactPref'){
+        const rev = active.querySelector('#tgReveal');
+        if (rev){
+          const open = r.value === 'telegram';
+          rev.classList.toggle('open', open);
+          if (open) setTimeout(()=> active.querySelector('#in-telegramHandle')?.focus({preventScroll:true}), 240);
+        }
+      }
+    });
+  });
+
+  // Checkbox
+  const agree = active.querySelector('#agree');
+  if (agree) agree.addEventListener('change', ()=> { S.agree = agree.checked; clearError('agree', active); });
+
+  // Disclosure
+  const dis = active.querySelector('#disclose');
+  const more = active.querySelector('#more');
+  if (dis && more){
+    if (S.__moreOpen) more.classList.add('open'), dis.setAttribute('aria-expanded','true');
+    dis.addEventListener('click', ()=>{
+      const open = !more.classList.contains('open');
+      more.classList.toggle('open', open);
+      dis.setAttribute('aria-expanded', String(open));
+      S.__moreOpen = open;
+      if (open) window.setTimeout(()=> active.querySelector('#in-message')?.focus({preventScroll:true}), 260);
+      // keep focus stable
+      dis.focus({ preventScroll:true });
+    });
+  }
+
+  // State picker
+  const pick = active.querySelector('#pick-state');
+  if (pick) pick.addEventListener('click', openSheet);
+}
+
+/* ============================================================================
+   VALIDATION
+   ========================================================================== */
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i;
+
+function formatPhone(v){
+  const d = v.replace(/\D/g,'').slice(0,10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `(${d.slice(0,3)}) ${d.slice(3)}`;
+  return `(${d.slice(0,3)}) ${d.slice(3,6)}-${d.slice(6)}`;
+}
+
+function fieldError(key){
+  const v = S[key];
+  switch(key){
+    case 'firstName': return v.trim() ? '' : 'Enter your first name.';
+    case 'lastName':  return v.trim() ? '' : 'Enter your last name.';
+    case 'email':     return EMAIL_RE.test(v.trim()) ? '' : (v.trim() ? 'That email doesn\'t look right.' : 'Enter your email address.');
+    case 'phone':     return v.replace(/\D/g,'').length === 10 ? '' : (v ? 'Enter a 10-digit US number.' : 'Enter your phone number.');
+    case 'employed':  return v ? '' : 'Choose your employment status.';
+    case 'creditScore': return v ? '' : 'Choose a credit score range.';
+    case 'contactPref': return v ? '' : 'Choose how we should reach you.';
+    case 'telegramHandle': {
+      const h = v.trim().replace(/^@/,'');
+      if (S.contactPref !== 'telegram') return '';
+      return /^[a-z0-9_]{5,32}$/i.test(h) ? '' : (h ? 'Use 5–32 letters, numbers or underscores.' : 'Enter your Telegram username.');
+    }
+    case 'agree': return S.agree ? '' : 'Please accept the terms to continue.';
+    default: return '';
+  }
+}
+
+function setError(key, msg, scope){
+  const el = scope.querySelector(`#err-${key}`);
+  if (!el) return;
+  if (msg){
+    el.hidden = false;
+    el.querySelector('span').textContent = msg;
+    const input = scope.querySelector(`#in-${key}`);
+    if (input){ input.classList.add('has-error'); input.setAttribute('aria-invalid','true'); }
+    // Radio groups: mark the group container so the cards show the error ring.
+    scope.querySelectorAll(`input[name="${key}"]`).forEach(r=>{
+      r.setAttribute('aria-invalid','true');
+      const box = r.nextElementSibling;
+      if (box) box.classList.add('is-error');
+    });
+  } else {
+    el.hidden = true;
+  }
+}
+
+function clearError(key, scope){
+  const el = scope.querySelector(`#err-${key}`);
+  if (el) el.hidden = true;
+  const input = scope.querySelector(`#in-${key}`);
+  if (input){
+    input.classList.remove('has-error');
+    input.removeAttribute('aria-invalid');
+  }
+  scope.querySelectorAll(`input[name="${key}"]`).forEach(r=>{
+    r.removeAttribute('aria-invalid');
+    const box = r.nextElementSibling;
+    if (box) box.classList.remove('is-error');
+  });
+  if (key === 'agree'){
+    const wrap = scope.querySelector('.consent');
+    if (wrap) wrap.classList.remove('errored');
+    const cb = scope.querySelector('#agree');
+    if (cb) cb.removeAttribute('aria-invalid');
+  }
+}
+
+function validateField(key, scope){
+  const msg = fieldError(key);
+  if (msg) setError(key, msg, scope); else clearError(key, scope);
+  return !msg;
+}
+
+function validateStep(){
+  const def = steps[index];
+  const scope = form.querySelector('.step.active');
+  const required = def.id === 'name'    ? ['firstName','lastName']
+                 : def.id === 'contact' ? ['email','phone']
+                 : def.id === 'qual'    ? ['employed','creditScore']
+                 : def.id === 'reach'   ? ['contactPref','agree', ...(S.contactPref==='telegram'?['telegramHandle']:[])]
+                 : [];
+
+  let firstBad = null;
+  required.forEach(k=>{ if (!validateField(k, scope) && !firstBad) firstBad = k; });
+
+  if (firstBad){
+    const input = scope.querySelector(`#in-${firstBad}`) ||
+                  scope.querySelector(`[name="${firstBad}"]`);
+    const box = scope.querySelector(`[data-key="${firstBad}"] .opt-box`);
+    const target = input || box;
+    if (target){
+      target.scrollIntoView({ block:'center', behavior:'smooth' });
+      if (target.classList) {
+        target.classList.remove('nudge'); void target.offsetWidth; target.classList.add('nudge');
+      }
+      if (input) input.focus({ preventScroll:true });
+    }
+    const label = firstBad.replace(/([A-Z])/g,' $1').toLowerCase().replace(/^./, c=>c.toUpperCase());
+    live.textContent = `Please fix ${label}.`;
+    return false;
+  }
+  return true;
+}
+
+/* ============================================================================
+   NAVIGATION
+   ========================================================================== */
+function go(dir){
+  const total = steps.length;
+  if (dir === 'fwd'){
+    if (!validateStep()) return;
+    if (index === total-1) { submit(); return; }
+  }
+  index = Math.max(0, Math.min(total-1, index + (dir==='fwd'?1:-1)));
+  S.__moreOpen = false;
+  renderAll(dir);
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+backBtn.addEventListener('click', ()=> go('back'));
+nextBtn.addEventListener('click', ()=> go('fwd'));
+
+form.addEventListener('submit', e=>{ e.preventDefault(); go('fwd'); });
+
+/* Enter key advances from single-line inputs */
+form.addEventListener('keydown', e=>{
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT' && e.target.type !== 'radio'){
+    e.preventDefault();
+    go('fwd');
+  }
+});
+
+/* ============================================================================
+   STATE SHEET
+   ========================================================================== */
+let sheetActive = -1;
+let sheetFiltered = STATES.slice();
+
+function renderSheetList(q){
+  const query = q.trim().toLowerCase();
+  sheetFiltered = STATES.filter(s=> !query || s.toLowerCase().includes(query));
+  if (!sheetFiltered.length){
+    stateList.innerHTML = `<li class="sheet-empty" role="presentation">No states match “${q}”</li>`;
+    sheetActive = -1;
+    return;
+  }
+  sheetActive = sheetFiltered.findIndex(s=> s === S.state);
+  stateList.innerHTML = sheetFiltered.map((s,i)=>`
+    <li role="option" id="st-${i}" data-v="${s}" aria-selected="${S.state===s}" class="${i===sheetActive?'act':''}">
+      <span>${s}</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+    </li>`).join('');
+  if (sheetActive >= 0) stateSearch.setAttribute('aria-activedescendant', `st-${sheetActive}`);
+  else stateSearch.removeAttribute('aria-activedescendant');
+}
+
+function openSheet(){
+  const pick = document.getElementById('pick-state');
+  if (pick) pick.setAttribute('aria-expanded','true');
+  stateSearch.value = '';
+  renderSheetList('');
+  sheet.classList.add('open');
+  sheet.setAttribute('aria-hidden','false');
+  sheet.removeAttribute('inert');
+  document.body.style.overflow = 'hidden';
+  window.setTimeout(()=> stateSearch.focus({ preventScroll:true }), 90);
+}
+
+function closeSheet(restore){
+  sheet.classList.remove('open');
+  sheet.setAttribute('aria-hidden','true');
+  sheet.setAttribute('inert','');
+  document.body.style.overflow = '';
+  const pick = document.getElementById('pick-state');
+  if (pick){ pick.setAttribute('aria-expanded','false'); if (restore) pick.focus({ preventScroll:true }); }
+}
+
+function chooseState(v){
+  S.state = v;
+  const pick = document.getElementById('pick-state');
+  if (pick){
+    pick.classList.remove('is-empty');
+    pick.querySelector('span').textContent = v;
+  }
+  closeSheet(true);
+}
+
+document.getElementById('sheetCancel').addEventListener('click', ()=> closeSheet(true));
+sheet.addEventListener('click', e=>{ if (e.target === sheet) closeSheet(true); });
+
+stateSearch.addEventListener('input', ()=> renderSheetList(stateSearch.value));
+
+stateSearch.addEventListener('keydown', e=>{
+  const max = sheetFiltered.length - 1;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp'){
+    e.preventDefault();
+    if (!sheetFiltered.length) return;
+    if (sheetActive < 0) sheetActive = e.key === 'ArrowDown' ? 0 : max;
+    else sheetActive = Math.max(0, Math.min(max, sheetActive + (e.key==='ArrowDown'?1:-1)));
+    stateList.querySelectorAll('li[role="option"]').forEach((li,i)=> li.classList.toggle('act', i===sheetActive));
+    const el = stateList.querySelector(`#st-${sheetActive}`);
+    if (el) el.scrollIntoView({ block:'nearest' });
+    stateSearch.setAttribute('aria-activedescendant', `st-${sheetActive}`);
+  }
+  if (e.key === 'Enter'){
+    e.preventDefault();
+    if (sheetActive >= 0 && sheetFiltered[sheetActive]) chooseState(sheetFiltered[sheetActive]);
+  }
+  if (e.key === 'Escape'){ e.preventDefault(); closeSheet(true); }
+});
+
+stateList.addEventListener('click', e=>{
+  const li = e.target.closest('li[data-v]');
+  if (li) chooseState(li.dataset.v);
+});
+
+/* ============================================================================
+   SUBMIT → HERO MOMENT → CONFIRMATION
+   ========================================================================== */
+const CHANNEL = { whatsapp:"WhatsApp", telegram:"Telegram", email:"email" };
+
+function submit(){
+  nextBtn.disabled = true;
+  sendEl.classList.add('on');
+  sendEl.setAttribute('aria-hidden','false');
+  live.textContent = 'Sending your application.';
+
+  const reduced = document.documentElement.dataset.motion === 'off' ||
+                  window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  window.setTimeout(()=>{
+    document.getElementById('sendLabel').textContent = 'Application received';
+    window.setTimeout(()=>{
+      sendEl.classList.remove('on');
+      sendEl.setAttribute('aria-hidden','true');
+      showDone();
+    }, reduced ? 60 : 900);
+  }, reduced ? 400 : 1500);
+}
+
+function showDone(){
+  const ch = CHANNEL[S.contactPref] || 'email';
+  form.innerHTML = `
+    <div class="done-wrap">
+      <div class="done-mark">${ICON_CHECK}</div>
+      <div class="done-badge"><i></i>Application received</div>
+      <h2 class="h" id="step-title" tabindex="-1">You're on the list.<br><em>We'll be in touch.</em></h2>
+      <p class="sub">A person reviews every application. Expect to hear from us via
+        <strong style="color:var(--ink);font-weight:600">${ch}</strong> within 24 hours.</p>
+      <div class="done-actions">
+        <button type="button" class="btn btn-primary" id="restart" style="max-width:none;margin:0;padding:0 30px">
+          Review the flow again
+          <svg class="arrow" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>`;
+
+  document.getElementById('nav').style.display = 'none';
+  progress.querySelector('i').style.width = '100%';
+  window.scrollTo({ top:0, behavior:'smooth' });
+  live.textContent = `Application received. We'll contact you via ${ch} within 24 hours.`;
+
+  document.getElementById('restart').addEventListener('click', ()=>{
+    Object.keys(S).forEach(k=>{ if (k !== '__moreOpen') S[k] = (typeof S[k]==='boolean' ? false : ''); });
+    index = 0;
+    document.getElementById('nav').style.display = '';
+    nextBtn.disabled = false;
+    renderAll('fwd');
+  });
+}
+
+/* ============================================================================
+   REVIEW TOOLBAR
+   ========================================================================== */
+function setVariant(v){
+  if (variant === v) return;
+  variant = v;
+  index = 0;
+  S.__moreOpen = false;
+  document.getElementById('t5').setAttribute('aria-pressed', String(v===5));
+  document.getElementById('t4').setAttribute('aria-pressed', String(v===4));
+  document.getElementById('nav').style.display = '';
+  nextBtn.disabled = false;
+  renderAll('fwd');
+}
+
+document.getElementById('t5').addEventListener('click', ()=> setVariant(5));
+document.getElementById('t4').addEventListener('click', ()=> setVariant(4));
+
+document.getElementById('tMotion').addEventListener('click', function(){
+  const on = document.documentElement.dataset.motion !== 'off';
+  document.documentElement.dataset.motion = on ? 'off' : 'on';
+  this.setAttribute('aria-pressed', String(on));
+});
+
+document.getElementById('tNotes').addEventListener('click', function(){
+  const n = document.getElementById('notes');
+  const open = n.classList.toggle('open');
+  this.setAttribute('aria-pressed', String(open));
+});
+
+/* ============================================================================
+   BOOT
+   ========================================================================== */
+renderAll('fwd');
+
+})();
+</script>
+</body>
+</html>
