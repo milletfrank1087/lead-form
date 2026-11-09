@@ -330,6 +330,7 @@ const Apply = () => {
         // The server insists on a value; the wizard no longer asks about employment.
         employed: "not-collected",
         creditScore: d.creditBand,
+        creditConsent: d.creditConsent,
         message: buildLeadMessage(d),
         referralCode,
         contactPref: d.contactPref,

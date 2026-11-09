@@ -7,6 +7,8 @@ export type ApplicationPayload = {
   state: string;
   employed: string;
   creditScore: string;
+  /** true when the applicant ticked the credit-step box (the wizard cannot continue without it). */
+  creditConsent?: boolean;
   message: string;
   referralCode: string;
   contactPref: string;
