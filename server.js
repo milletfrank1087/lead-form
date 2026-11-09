@@ -482,11 +482,13 @@ async function handleCreateLead(req, res) {
       fbclid: tracking.fbclid || null,
       ttp,
       ttclid,
-      utmSource: tracking.utmSource || null,
-      utmMedium: tracking.utmMedium || null,
-      utmCampaign: tracking.utmCampaign || null,
-      utmContent: tracking.utmContent || null,
-      utmTerm: tracking.utmTerm || null,
+      // public/tracking.js posts these snake_case (utm_source, ...); camelCase is still accepted.
+      // Reading only camelCase silently dropped every UTM, so ads could not be tied to leads.
+      utmSource: tracking.utmSource || tracking.utm_source || null,
+      utmMedium: tracking.utmMedium || tracking.utm_medium || null,
+      utmCampaign: tracking.utmCampaign || tracking.utm_campaign || null,
+      utmContent: tracking.utmContent || tracking.utm_content || null,
+      utmTerm: tracking.utmTerm || tracking.utm_term || null,
       referrer: tracking.referrer || clientInfo.referer || 'Direct',
       sourceUrl,
       eventId,
