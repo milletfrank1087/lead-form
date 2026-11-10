@@ -20,10 +20,9 @@ export const LEGAL: Record<LegalKey, { title: string; body: ReactNode }> = {
 
         <h4>2. What we do with your details</h4>
         <p>
-          You are applying for a role where a US LLC is formed in your legal name and its banking and
-          payment processing accounts are opened. To assess that, we collect your legal name, email,
-          mobile number, a credit score range, your stated availability, and — later, in conversation —
-          identity documents and bank statements.
+          You are applying to act as the US person behind an overseas brand's US account. To assess that, we
+          collect your legal name, email, mobile number, a rough credit range, your usual reachable hours,
+          and — later, in conversation — identity documents and bank statements.
         </p>
         <p>
           Your details are used to assess this application and to run onboarding. They are{" "}
@@ -41,7 +40,7 @@ export const LEGAL: Record<LegalKey, { title: string; body: ReactNode }> = {
         <h4>4. What we ask of you</h4>
         <ul>
           <li>Provide accurate information, and only documents that are genuinely yours.</li>
-          <li>Respond to identity and verification requests within the availability window you chose.</li>
+          <li>Respond to verification requests when they come up.</li>
           <li>Tell us promptly if anything changes.</li>
         </ul>
         <p>
@@ -98,9 +97,9 @@ export const LEGAL: Record<LegalKey, { title: string; body: ReactNode }> = {
 
         <h4>Why we collect it</h4>
         <p>
-          To assess your application, to form the entity and open accounts where the application
-          proceeds, to meet identity-verification and anti-money-laundering obligations, and to keep a
-          record of what was agreed.
+          To assess your application, to set up the account and open things in your name where the
+          application proceeds, to meet identity-verification and anti-money-laundering obligations, and to
+          keep a record of what was agreed.
         </p>
 
         <h4>Who sees it</h4>

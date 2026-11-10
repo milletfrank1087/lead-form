@@ -280,7 +280,7 @@ const Tracking = (function () {
         {
           content_id: 'partner-application',
           content_type: 'product',
-          content_name: (data && data.contentName) || 'Fynex Partner Application',
+          content_name: (data && data.contentName) || 'Fynex American Verifier',
           quantity: 1,
           price: 0,
         },
@@ -336,7 +336,7 @@ const Tracking = (function () {
           {
             content_id: 'partner-application',
             content_type: 'product',
-            content_name: (data && data.contentName) || 'Fynex Partner Application',
+            content_name: (data && data.contentName) || 'Fynex American Verifier',
             quantity: 1,
             price: 0,
           },
@@ -356,7 +356,7 @@ const Tracking = (function () {
     formStartedFired = true;
     trackFormEvent('form_started', 'started typing personal details');
     return track('InitiateCheckout', {
-      contentName: 'Fynex Partner Application',
+      contentName: 'Fynex American Verifier',
       contentType: 'lead',
     });
   }
@@ -367,8 +367,8 @@ const Tracking = (function () {
   function trackLeadBrowser(leadMeta, maybeEventId) {
     const finalEventId = maybeEventId || generateEventId('Lead');
     const metaParams = {
-      content_name: 'Fynex Partner Application',
-      content_category: (leadMeta && leadMeta.creditScore) || 'partner-lead',
+      content_name: 'Fynex American Verifier',
+      content_category: (leadMeta && leadMeta.creditScore) || 'verifier-lead',
       content_type: 'lead',
       status: (leadMeta && leadMeta.employed) || 'submitted',
     };
@@ -380,7 +380,7 @@ const Tracking = (function () {
         {
           content_id: 'partner-application',
           content_type: 'product',
-          content_name: 'Fynex Partner Application',
+          content_name: 'Fynex American Verifier',
           quantity: 1,
           price: 0,
         },
@@ -432,7 +432,7 @@ const Tracking = (function () {
     trackPageView();
     trackViewContent({
       contentType: 'lead_form',
-      contentName: 'Fynex Partner Application',
+      contentName: 'Fynex American Verifier',
     });
     if (window.FunnelMonitor) {
       window.FunnelMonitor.stage('form_ready');

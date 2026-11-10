@@ -96,7 +96,7 @@ export function buildWhatsappMessage(d: WizardData): string {
   const availability = [speed, hours].filter(Boolean).join(", ");
 
   return [
-    "Hi Fynex — I've just submitted my partner application.",
+    "Hi Fynex — I've just submitted my application.",
     "",
     d.legalName.trim() || null,
     d.email.trim() || null,

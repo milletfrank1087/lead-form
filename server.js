@@ -286,11 +286,11 @@ app.post('/api/track', async (req, res) => {
       contentName:
         customData.content_name ||
         customData.contentName ||
-        'Fynex Partner Application',
+        'Fynex American Verifier',
       contentCategory:
         customData.content_category ||
         customData.contentCategory ||
-        'partner-lead',
+        'verifier-lead',
       contentType:
         customData.content_type || customData.contentType || 'lead',
       status: customData.status,
@@ -687,7 +687,7 @@ async function startServer() {
     .join(' + ') || 'Disabled';
 
   app.listen(PORT, () => {
-    JourneyLog.startup(PORT, 'Fynex Partner Lead Funnel', 'EN', trackingSummary);
+    JourneyLog.startup(PORT, 'Fynex Verifier Funnel', 'EN', trackingSummary);
   });
 }
 

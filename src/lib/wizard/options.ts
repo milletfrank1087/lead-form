@@ -18,11 +18,14 @@ export const CREDIT_BANDS: readonly { v: CreditBand; t: string; s: string }[] = 
   { v: "below-600", t: "Below 600", s: "Still building" },
 ];
 
-/** Tier labels only: no payment figures exist on file, so none are promised. */
+/**
+ * Speed labels only. The old "rate tier" framing is gone: pay is per completed check, so this now
+ * ranks how close to the front of the queue a responder sits, not what a monthly rate is.
+ */
 export const SPEEDS: readonly { v: Speed; t: string; s: string; tier: string }[] = [
-  { v: "1h", t: "Within 1 hour", s: "I'm usually near my phone", tier: "Highest rate" },
-  { v: "day", t: "Same day", s: "I'll get to it that day", tier: "Higher rate" },
-  { v: "24h", t: "Within 24 hours", s: "Next day is fine", tier: "Standard rate" },
+  { v: "1h", t: "Within 1 hour", s: "I'm usually near my phone", tier: "First in line" },
+  { v: "day", t: "Same day", s: "I'll get to it that day", tier: "Next in line" },
+  { v: "24h", t: "Within 24 hours", s: "Next day is fine", tier: "Standard" },
 ];
 
 /** WhatsApp is listed first and carries the fastest reply chip on purpose. */
@@ -45,9 +48,9 @@ export const SPEED_SHORT: Record<Speed, string> = {
 };
 
 export const TIER_PHRASE: Record<Speed, string> = {
-  "1h": "the highest monthly rate",
-  day: "a higher monthly rate",
-  "24h": "the standard monthly rate",
+  "1h": "first in line",
+  day: "next in line",
+  "24h": "at the standard pace",
 };
 
 export const HOURS: readonly { v: string; t: string }[] = Array.from({ length: 24 }, (_, h) => {
@@ -71,7 +74,7 @@ export const ZONES: readonly string[] = [
 export type StepId = "cover" | "details" | "credit" | "part" | "ready" | "channel";
 
 export const STEPS: readonly { id: StepId; label: string; eyebrow: string }[] = [
-  { id: "cover", label: "Welcome", eyebrow: "Partner programme" },
+  { id: "cover", label: "Welcome", eyebrow: "Be the American" },
   { id: "details", label: "Your details", eyebrow: "01 / Details" },
   { id: "credit", label: "Credit", eyebrow: "02 / Credit" },
   { id: "part", label: "Your part", eyebrow: "03 / Availability" },

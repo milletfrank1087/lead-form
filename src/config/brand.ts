@@ -11,6 +11,16 @@ export const brand = {
   legalEntity: "FynexNetwork LLC",
   copyrightYear: 2026,
   logoSrc: "/logo.png",
+  /** The role the applicant is being recruited for. Surfaces on the rail; nothing else names it. */
+  roleName: "American Verifier",
+  /** The one-line hook for the role. Cover eyebrow + title-lead copy lean on this framing. */
+  programLine: "Be the American.",
+  /**
+   * The ONLY place the amount and cadence are written inside the wizard: the confirmation screen
+   * imports these. The matching values live in Maya's KB (HQ-06/HQ-11) and in the ad copy.
+   */
+  pay: "$50 a check",
+  payCadence: "every two weeks",
   /**
    * Where the "Start the conversation" button on the confirmation screen sends people (digits only,
    * country code first). It is the only WhatsApp number on file and still unverified, so change it

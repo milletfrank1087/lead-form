@@ -10,21 +10,20 @@ A fictional US applicant for testing the `/apply` form. Every identifier below i
 | Last name | Whitaker |
 | Email | `daniel.whitaker@example.com` |
 | US phone | `(512) 555-0147` (type `5125550147`; the form formats it) |
-| City | Austin |
-| State | Texas |
-| Employment status | Employed Full-Time |
-| Approximate credit score | 700–749 — Very Good |
-| Additional message | I run a small marketing consultancy in Austin and I'm looking for a partner program that could add recurring revenue for my clients. Happy to jump on a call this week. |
-| Referral code | *(leave blank)* |
+| Approximate credit score | 700–749 — Very good |
+| How fast can you respond | Same day |
+| Reachable hours / timezone | defaults are fine (09:00–18:00, detected zone) |
 | Preferred contact method | Email |
 | Consent checkbox | Checked |
+
+> The wizard no longer asks for city, state or employment (`employed` is sent as `"not-collected"`), so
+> those values are fixed in the POST body rather than entered on the form.
 
 ## Entering it
 
 - **Phone:** type only the digits. The field auto-formats and stops at 10 digits.
-- **State:** open the State picker and choose Texas (the list is searchable).
-- **Referral code:** leave blank. It is optional, and an invented code could collide with a real one.
-- **Consent:** tick the checkbox, or the form will not submit.
+- **Availability:** pick "Same day" (the step exists so we learn how fast they answer a live check).
+- **Consent:** tick the Terms/Privacy checkbox on the documents step, or the form will not submit.
 - **Expected result:** a "Submitting your application…" overlay for about 2 seconds, a brief check flash, then the "application received" screen.
 
 ## Where to use it

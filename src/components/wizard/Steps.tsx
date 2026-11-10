@@ -22,6 +22,7 @@ import {
   hasWhatsapp,
   type Env,
 } from "@/lib/wizard/handoff";
+import { brand } from "@/config/brand";
 import { fmtHour, zoneLabel, zoneOffset, zoneRegion } from "@/lib/wizard/zone";
 import {
   IconAlert,
@@ -236,21 +237,18 @@ function Checkbox(props: {
 
 export function CoverStep() {
   const points: [string, string][] = [
-    ["The LLC is yours.", "Formed in your legal name, and it stays yours."],
-    ["You never pay.", "No fee, no deposit, no outlay at any point."],
-    ["No credit check.", "We never run a soft or hard pull on your file."],
-    [
-      "Paid monthly.",
-      "Partnerships are paid a monthly fee once active — faster availability is reflected in your rate.",
-    ],
+    ["You're the American.", "Brands abroad need a real US person behind them. That's you."],
+    ["Tap. Smile. Get paid.", "A check is a quick live selfie. Nothing more."],
+    ["Stay reachable.", "The links expire, so we just need you around when one comes up."],
+    ["You never pay.", "No fee, no deposit, no credit check."],
   ];
   return (
     <>
-      <Eyebrow text="Partner programme" />
-      <Title>Become a Fynex partner</Title>
+      <Eyebrow text="Be the American" />
+      <Title>Get paid to prove you're American</Title>
       <Sub>
-        We form a US LLC in your name and open its banking and payment processing. Your part is small: stay
-        reachable and complete short identity checks when they come up.
+        Brands overseas can't get a US account without a real American behind them. That's the whole job:
+        prove it's really you when a check comes up.
       </Sub>
 
       <ul className="cover-points stag" style={stag(3)}>
@@ -293,7 +291,7 @@ export function DetailsStep({ data, errors, set, blur }: StepCtx) {
     <>
       <Eyebrow text="01 / Details" />
       <Title>Your legal details</Title>
-      <Sub>Your LLC is formed in this name, so use it exactly as it appears on your government ID.</Sub>
+      <Sub>Use your full legal name exactly as it appears on your government ID.</Sub>
 
       <div className="fields stag" style={stag(3)}>
         <Field
@@ -356,8 +354,7 @@ export function CreditStep({ data, errors, set }: StepCtx) {
       <Eyebrow text="02 / Credit" />
       <Title>A rough idea of your credit</Title>
       <Sub>
-        This is only used to work out whether we can open a processing account for you. Checking your own
-        score costs you nothing.
+        Just a rough idea, so we know you qualify. Checking your own score costs nothing.
       </Sub>
 
       <div className="fields stag" style={stag(3)}>
@@ -394,8 +391,8 @@ export function CreditStep({ data, errors, set }: StepCtx) {
             No soft or hard credit check
           </div>
           <p>
-            We never pull your credit report. Looking up your own score is a soft inquiry and does not
-            affect it. A lower range does not mean no — it goes to a review of your banking options instead.
+            We never pull your credit report. Looking up your own score is a soft inquiry and doesn't
+            affect it.
           </p>
         </div>
 
@@ -406,8 +403,7 @@ export function CreditStep({ data, errors, set }: StepCtx) {
           error={errors.creditConsent}
           onChange={(checked) => set("creditConsent", checked)}
         >
-          I understand this is my own estimate, not a check you are running, and that a review may be needed
-          depending on the range.
+          I understand this is my own estimate, not a check you're running.
         </Checkbox>
       </div>
     </>
@@ -452,8 +448,8 @@ function Commit({ data }: { data: WizardData }) {
   }
   return (
     <>
-      Verification links expire, so we'll send them {whenNode} and you'll respond <b>{speed}</b>. That places
-      you on <b>{tier}</b>. Miss one and your timeline slips — that's the only thing we need from you.
+      Verification links expire, so we'll send them {whenNode} and you'll respond <b>{speed}</b>. That puts
+      you <b>{tier}</b>. Miss one and your timeline slips — that's the only thing we need from you.
     </>
   );
 }
@@ -473,8 +469,8 @@ export function PartStep({ data, errors, set, tzDetected }: StepCtx) {
       <Eyebrow text="03 / Availability" />
       <Title>Your part: staying reachable</Title>
       <Sub>
-        Once your LLC exists, banks and processors will ask you to prove it is really you. Those requests are
-        usually a quick live selfie, and the links expire. This is the only ongoing thing you do.
+        Verification links expire, so this is the one thing we ask about you: when can you act on one? It's
+        usually a quick live selfie, taken there and then.
       </Sub>
 
       <div className="fields stag" style={stag(3)}>
@@ -483,8 +479,7 @@ export function PartStep({ data, errors, set, tzDetected }: StepCtx) {
             How quickly can you respond?
           </span>
           <p className="hint" style={{ margin: "0 0 8px" }}>
-            Faster availability moves your application along sooner — verifications are what hold a file up —
-            and it's reflected in your monthly rate.
+            Verifications are what hold a file up, so the faster responders are first in line.
           </p>
           <RadioCards
             name="availSpeed"
@@ -607,8 +602,8 @@ export function ReadyStep({ data, errors, set, openLegal }: StepCtx) {
       q: "“Your face and the license in one photo. A headshot alone doesn't work.”",
       w: (
         <>
-          The license shows who owns the LLC; the selfie proves the person holding it is really you. Both are
-          needed.
+          The license shows who the account is for; the selfie proves the person holding it is really you.
+          Both are needed.
         </>
       ),
     },
@@ -714,8 +709,8 @@ export function ChannelStep({ data, errors, set, blur }: StepCtx) {
       <Eyebrow text="05 / Reach you" />
       <Title>Where should we reach you?</Title>
       <Sub>
-        Last one. Maya runs your onboarding conversation: she explains the arrangement, then asks for your
-        documents one at a time. Pick the place you actually check.
+        Last one. Maya takes it from here: she explains how it works, then asks for your ID one thing at a
+        time. Pick the place you actually check.
       </Sub>
 
       <div className="fields stag" style={stag(3)}>
@@ -793,7 +788,6 @@ export function DoneScreen({ data, env, waMessage, waHref, onWhatsappTap, onCopy
   };
 
   const speed = data.availSpeed ? SPEED_SHORT[data.availSpeed] : "your window";
-  const tier = data.availSpeed ? TIER_PHRASE[data.availSpeed] : "your chosen rate";
   const appName = env.app ? APP_NAME[env.app] : "";
 
   return (
@@ -892,31 +886,31 @@ export function DoneScreen({ data, env, waMessage, waHref, onWhatsappTap, onCopy
         <li>
           <span className="ns-n">3</span>
           <span>
-            <b>Your LLC is formed in your name.</b> You don't do anything for this. It usually takes a few
-            business days, and the company stays yours throughout.
+            <b>Your account is set up in your name.</b> You don't do anything for this.
           </span>
         </li>
         <li>
           <span className="ns-n">4</span>
           <span>
-            <b>Banking and processing are opened for that LLC.</b> This is when verification links start
-            arriving — expect a live selfie, which must be taken there and then rather than picked from your
-            camera roll.
+            <b>Then verification links start arriving.</b> Expect a quick live selfie, taken there and then
+            rather than picked from your camera roll.
           </span>
         </li>
         <li>
           <span className="ns-n">5</span>
           <span>
-            <b>You answer each link within {speed}.</b> The links expire, and an expired one pauses your file
-            until a new one is sent. This is the only part that depends on you.
+            <b>You answer each link.</b> Tap, smile, done — within {speed} of it arriving. That's the whole
+            ongoing job.
           </span>
         </li>
         <li>
           <span className="ns-n">6</span>
           <span>
-            <b>Once the account is live, the partnership pays monthly</b> at {tier}, which is what the
-            response window you chose qualifies you for. A person confirms the exact terms on your partner
-            file.
+            <b>
+              You get paid {brand.pay}, {brand.payCadence} from the day you're approved.
+            </b>{" "}
+            Zelle or bank transfer, whichever you prefer. Your first check lands right after your first
+            verification, so it doesn't wait long. A person confirms the exact terms on your partner file.
           </span>
         </li>
       </ol>

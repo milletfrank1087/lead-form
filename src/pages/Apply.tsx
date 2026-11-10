@@ -435,7 +435,7 @@ const Apply = () => {
             <img src={brand.logoSrc} alt="" />
             <div>
               <span className="w">{brand.shortName}</span>
-              <span className="t">Partner App</span>
+              <span className="t">{brand.roleName}</span>
             </div>
           </div>
           <nav aria-label="Application steps">
@@ -472,7 +472,7 @@ const Apply = () => {
             </ol>
           </nav>
           <div className="rail-foot">
-            {["LLC formed in your name", "You never pay us anything", "No soft or hard credit check"].map((t) => (
+            {["You're the American", "You never pay us anything", "No credit check, no SSN"].map((t) => (
               <div className="assure" key={t}>
                 <svg
                   width="12"
