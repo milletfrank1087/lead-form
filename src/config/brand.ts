@@ -6,9 +6,9 @@
  * them (and the logo) with your own before publishing anything.
  */
 export const brand = {
-  name: "Fynex Network",
-  shortName: "Fynex",
-  legalEntity: "FynexNetwork LLC",
+  name: "Phoenix Network",
+  shortName: "Phoenix",
+  legalEntity: "Phoenix Network LLC",
   copyrightYear: 2026,
   logoSrc: "/logo.png",
   /** The role the applicant is being recruited for. Surfaces on the rail; nothing else names it. */

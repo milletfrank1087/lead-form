@@ -32,7 +32,7 @@ A fictional US applicant for testing the `/apply` form. Every identifier below i
   - Local: `http://localhost:5173/apply` (start it with `npm run dev`)
   - Live: `https://lead-form-production-cac8.up.railway.app/apply`
 - The submit function is currently a stub (`src/lib/submit-application.ts`), so nothing is stored or sent anywhere.
-- Do **not** enter it at `fynexnetwork.com`. The owner would receive it as a real lead.
+- Do **not** enter it at `phoenixnetwork.online`. The owner would receive it as a real lead.
 - Once you connect a real backend, this record will sit in your lead list. Delete it, or filter on the `example.com` email.
 
 ## Why these values are safe
