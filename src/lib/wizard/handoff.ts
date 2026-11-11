@@ -65,7 +65,7 @@ export function hasWhatsapp(): boolean {
   return whatsappDigits().length >= 8;
 }
 
-/** "13183147693" -> "+1 (318) 314-7693" */
+/** "13183147693" -> "+1 (318) 314-7693" (the shape only; the number itself comes from brand) */
 export function displayWhatsappNumber(): string {
   const d = whatsappDigits();
   if (d.length === 11 && d.startsWith("1")) {

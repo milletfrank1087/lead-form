@@ -5,6 +5,19 @@
  * These values reproduce the page this project was modelled on. If you are not that company, replace
  * them (and the logo) with your own before publishing anything.
  */
+/** The default, used when `VITE_WHATSAPP_NUMBER` is unset. This is the "+1 (910) 474-0901" business
+ *  account that answers as "Phoenix Network" on WhatsApp, which is the brand this page now carries.
+ *  The previous default (13183147693) answers as "FynnexNetwork LLC": both exist, and they are not
+ *  the same chat. */
+const FALLBACK_WHATSAPP_NUMBER = "19104740901";
+
+/** `VITE_WHATSAPP_NUMBER` wins when it is a usable number (8+ digits); anything else falls back.
+ *  Read through import.meta.env so Vite inlines it at build time (the page is a static SPA). */
+function readWhatsappNumber(): string {
+  const fromEnv = String(import.meta.env.VITE_WHATSAPP_NUMBER ?? "").trim();
+  return fromEnv.replace(/\D/g, "").length >= 8 ? fromEnv : FALLBACK_WHATSAPP_NUMBER;
+}
+
 export const brand = {
   name: "Phoenix Network",
   shortName: "Phoenix",
@@ -23,8 +36,14 @@ export const brand = {
   payCadence: "every two weeks",
   /**
    * Where the "Start the conversation" button on the confirmation screen sends people (digits only,
-   * country code first). It is the only WhatsApp number on file and still unverified, so change it
-   * here and every link follows.
+   * country code first). Every link and the number printed in the handoff hint come from this one value.
+   *
+   * This must be the number Maya SENDS from, i.e. the Cloud API phone number on the WhatsApp Business
+   * account (`WHATSAPP_PHONE_NUMBER_ID` in the onboarding app, shown on its Channels page as the
+   * "display phone number"). If it is any other number, the button opens a chat that nothing answers:
+   * the candidate's message lands somewhere Maya never reads, and the 24-hour reply window opens on a
+   * number she does not use. Override it per deploy with `VITE_WHATSAPP_NUMBER` rather than editing
+   * this file, so the deployed number can be checked against Meta's dashboard without a release.
    */
-  whatsappNumber: "13183147693",
+  whatsappNumber: readWhatsappNumber(),
 } as const;
