@@ -6,7 +6,7 @@
  * them (and the logo) with your own before publishing anything.
  */
 /** The default, used when `VITE_WHATSAPP_NUMBER` is unset. This is the "+1 (910) 474-0901" business
- *  account that answers as "Phoenix Network" on WhatsApp, which is the brand this page now carries.
+ *  account that answers as "Stateside Partners" on WhatsApp, which is the brand this page now carries.
  *  The previous default (13183147693) answers as "FynnexNetwork LLC": both exist, and they are not
  *  the same chat. */
 const FALLBACK_WHATSAPP_NUMBER = "19104740901";
@@ -19,9 +19,9 @@ function readWhatsappNumber(): string {
 }
 
 export const brand = {
-  name: "Phoenix Network",
-  shortName: "Phoenix",
-  legalEntity: "Phoenix Network LLC",
+  name: "Stateside Partners",
+  shortName: "Stateside",
+  legalEntity: "Stateside Partners LLC",
   copyrightYear: 2026,
   logoSrc: "/logo.png",
   /** The role the applicant is being recruited for. Surfaces on the rail; nothing else names it. */

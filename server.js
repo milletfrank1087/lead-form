@@ -286,7 +286,7 @@ app.post('/api/track', async (req, res) => {
       contentName:
         customData.content_name ||
         customData.contentName ||
-        'Phoenix American Verifier',
+        'Stateside American Verifier',
       contentCategory:
         customData.content_category ||
         customData.contentCategory ||
@@ -687,7 +687,7 @@ async function startServer() {
     .join(' + ') || 'Disabled';
 
   app.listen(PORT, () => {
-    JourneyLog.startup(PORT, 'Phoenix Verifier Funnel', 'EN', trackingSummary);
+    JourneyLog.startup(PORT, 'Stateside Verifier Funnel', 'EN', trackingSummary);
   });
 }
 
