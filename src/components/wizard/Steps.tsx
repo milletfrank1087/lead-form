@@ -907,10 +907,12 @@ export function DoneScreen({ data, env, waMessage, waHref, onWhatsappTap, onCopy
           <span className="ns-n">6</span>
           <span>
             <b>
-              You get paid {brand.pay}, {brand.payCadence} from the day you're approved.
+              You get paid {brand.pay} for each completed verification.
             </b>{" "}
-            Zelle or bank transfer, whichever you prefer. Your first check lands right after your first
-            verification, so it doesn't wait long. A person confirms the exact terms on your partner file.
+            Verifications add up: your first payout lands exactly two weeks after your first completed
+            verification and covers every check done by then, and payouts are {brand.payCadence} after
+            that. Payment methods vary, and you'll pick yours when it's time to be paid. A person
+            confirms the exact terms on your partner file.
           </span>
         </li>
       </ol>
