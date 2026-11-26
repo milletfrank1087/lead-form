@@ -639,7 +639,11 @@ function serveDashboard(req, res) {
   res.sendFile(target);
 }
 
-app.get('/dashboard', serveDashboard);
+// The old "Leads & Funnel Operating Cockpit" lived here. /admin keeps a last-resort view on this host, but /dashboard
+// now forwards to Stateside Command, so a dashboard.statesidepartners.online link can never land on this page again
+// (2026-11-26: the subdomain was moved to the fynex-sales-rep service, which is the desk the operator actually uses).
+const COMMAND_DASHBOARD = process.env.COMMAND_DASHBOARD_URL || 'https://dashboard.phoenixnetwork.online/dashboard';
+app.get('/dashboard', (req, res) => res.redirect(302, COMMAND_DASHBOARD));
 app.get('/admin', serveDashboard);
 
 const distDir = path.join(__dirname, 'dist');
