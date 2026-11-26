@@ -5,11 +5,13 @@
  * These values reproduce the page this project was modelled on. If you are not that company, replace
  * them (and the logo) with your own before publishing anything.
  */
-/** The default, used when `VITE_WHATSAPP_NUMBER` is unset. This is the "+1 (910) 474-0901" business
- *  account that answers as "Stateside Partners" on WhatsApp, which is the brand this page now carries.
- *  The previous default (13183147693) answers as "FynnexNetwork LLC": both exist, and they are not
- *  the same chat. */
-const FALLBACK_WHATSAPP_NUMBER = "19104740901";
+/** The default, used when `VITE_WHATSAPP_NUMBER` is unset. This is the Cloud API number Maya sends from
+ *  on the Stateside Partners WhatsApp Business account, "+1 555-422-7372" (`WHATSAPP_PHONE_NUMBER_ID`
+ *  1232483556622841 in the onboarding app). It was switched here from the older "+1 (910) 474-0901"
+ *  account on 2026-11-26, once the templates were approved and the webhook was connected, so a tap
+ *  lands on the number the onboarding app actually answers on. The former defaults (19104740901 and,
+ *  before it, 13183147693) are different chats - do not fall back to them. */
+const FALLBACK_WHATSAPP_NUMBER = "15554227372";
 
 /** `VITE_WHATSAPP_NUMBER` wins when it is a usable number (8+ digits); anything else falls back.
  *  Read through import.meta.env so Vite inlines it at build time (the page is a static SPA). */
