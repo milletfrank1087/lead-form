@@ -181,6 +181,40 @@ function buildPixelScripts() {
   'https://connect.facebook.net/en_US/fbevents.js');
   fbq('init', '${fbPixelId}');
   </script>
+  <script>
+    /* Landing Page View + first-party click id, fired inline at init.
+       public/tracking.js only fires PageView from Tracking.init(), on DOMContentLoaded and
+       after an awaited /api/tracking/config round-trip, so the view (and the _fbc the
+       Conversions API needs) lands several seconds late on a cold visit. Meta reports the
+       resulting gap as low fbc coverage. */
+    (function () {
+      var DAYS = 90 * 86400;
+      var ck = function (n) {
+        var m = document.cookie.match(new RegExp('(?:^|; )' + n + '=([^;]*)'));
+        return m ? decodeURIComponent(m[1]) : null;
+      };
+      var pvId = 'PageView_' + Date.now() + '_' + Math.random().toString(36).substring(2, 11);
+      window.__hrPageViewId = pvId;
+
+      // _fbc must exist before the pixel builds its beacon, or Meta cannot tie the click
+      // to this load and the view never qualifies as a landing page view.
+      try {
+        var clid = (window.location.search.match(/[?&]fbclid=([^&#]+)/) || [])[1];
+        if (clid) {
+          clid = decodeURIComponent(clid);
+          var cur = ck('_fbc') || '';
+          if (clid && cur.indexOf(clid) === -1) {
+            var fbc = 'fb.1.' + Date.now() + '.' + clid;
+            document.cookie = '_fbc=' + encodeURIComponent(fbc) + '; max-age=' + DAYS + '; path=/; SameSite=Lax';
+            document.cookie = '_fbclid=' + encodeURIComponent(clid) + '; max-age=' + DAYS + '; path=/; SameSite=Lax';
+          }
+        }
+      } catch (_) {}
+
+      try { fbq('track', 'PageView', {}, { eventID: pvId }); } catch (_) {}
+      window.__hrPageViewSent = true;
+    })();
+  </script>
   <noscript><img height="1" width="1" style="display:none"
   src="https://www.facebook.com/tr?id=${fbPixelId}&ev=PageView&noscript=1"
   /></noscript>`;

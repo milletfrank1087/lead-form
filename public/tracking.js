@@ -314,6 +314,9 @@ const Tracking = (function () {
   }
 
   function trackPageView() {
+    // server.js already fires PageView (and _fbc) inline at fbq('init'); don't double-count.
+    if (window.__hrPageViewSent) return window.__hrPageViewId || null;
+    window.__hrPageViewSent = true;
     const eventId = generateEventId('PageView');
     fireMetaPixel('PageView', {}, eventId);
     sendToServer('PageView', { eventId, data: {} });
