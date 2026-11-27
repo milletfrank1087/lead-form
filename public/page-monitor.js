@@ -16,10 +16,17 @@
   ];
   var furthest = 'page_loaded';
   var submitted = false;
+  var failed = false;
   var sentExit = false;
   var sentErrors = {};
   var errorCount = 0;
+  var droppedErrors = 0;
+  var capWarned = false;
   var startedAt = Date.now();
+  // Per-signature budget, and a higher global one. A single noisy signature used to be able to burn the
+  // whole page budget and silence every later error the applicant would have hit.
+  var PER_KEY_MAX = 3;
+  var GLOBAL_MAX = 40;
 
   function send(endpoint, payload, contentType) {
     var body = JSON.stringify(payload);
@@ -57,26 +64,56 @@
 
   function error(kind, message, extra) {
     var msg = String(message || '').slice(0, 300);
-    if (!msg) return;
+    var src = extra && extra.src ? String(extra.src).slice(0, 200) : '';
+    // A blank message used to be dropped here, which is exactly the case the browser gives us most:
+    // the page samples what it can and reports it rather than going dark.
+    if (!msg && !src) return;
     if (
       /^Script error\.?$|ResizeObserver loop|chrome-extension:|moz-extension:|safari-extension:|webkit-masked-url/i.test(
-        msg + ' ' + ((extra && extra.src) || '')
+        msg + ' ' + src
       )
     ) {
       return;
     }
-    var key = kind + '|' + msg;
-    if (sentErrors[key] || errorCount >= 15) return;
-    sentErrors[key] = 1;
+    var stack = extra && extra.stack ? String(extra.stack).slice(0, 600) : '';
+    // Key on the message, the source AND the first stack frame: a blank message used to collapse every
+    // distinct error into one bucket, so the second real failure was treated as a duplicate and lost.
+    var frame = stack.split('\n').map(function (l) { return l.trim(); })[1] || '';
+    var key = kind + '|' + msg + '|' + src + '|' + frame;
+    sentErrors[key] = (sentErrors[key] || 0) + 1;
+    if (sentErrors[key] > PER_KEY_MAX) return;
+    if (errorCount >= GLOBAL_MAX) {
+      droppedErrors += 1;
+      if (!capWarned) {
+        capWarned = true;
+        send(ERROR_ENDPOINT, {
+          kind: 'cap',
+          type: 'cap',
+          msg: 'error budget exhausted; later errors are only counted',
+          message: 'error budget exhausted; later errors are only counted',
+          cap: GLOBAL_MAX,
+          distinct: Object.keys(sentErrors).length,
+          stage: furthest,
+          secs: Math.round((Date.now() - startedAt) / 1000),
+        }, 'text/plain');
+      }
+      return;
+    }
     errorCount += 1;
     send(
       ERROR_ENDPOINT,
       {
+        // Both shapes: `kind`/`msg` is what this file has always sent, `type`/`message` is what the
+        // server reads. Sending one alone left every stored error blank.
         kind: kind,
-        msg: msg,
-        src: extra && extra.src ? String(extra.src).slice(0, 200) : '',
+        type: kind,
+        msg: msg || '(empty message)',
+        message: msg || '(empty message)',
+        src: src,
         line: (extra && extra.line) || 0,
         code: extra && extra.code != null ? String(extra.code).slice(0, 60) : '',
+        stack: stack,
+        repeat: sentErrors[key],
         stage: furthest,
         ms: (extra && extra.ms) || null,
         secs: Math.round((Date.now() - startedAt) / 1000),
@@ -96,7 +133,11 @@
         );
         return;
       }
-      error('js', e.message, { src: e.filename, line: e.lineno });
+      error('js', e.message, {
+        src: e.filename,
+        line: e.lineno,
+        stack: e.error && e.error.stack,
+      });
     },
     true
   );
@@ -104,6 +145,7 @@
   window.addEventListener('unhandledrejection', function (e) {
     var r = e.reason;
     error('promise', r && r.message ? r.message : String(r), {
+      stack: r && r.stack,
       src: r && r.stack ? String(r.stack).split('\n')[1] : '',
     });
   });
@@ -114,7 +156,10 @@
     var elapsedMs = Date.now() - startedAt;
     send(REPORT_ENDPOINT, {
       t: 'exit',
+      // Keep the reason: an abandoned application after a submit that threw is a different problem from
+      // one abandoned by a hesitation, and `furthest` alone cannot tell them apart.
       stage: furthest,
+      failed: failed,
       ms: elapsedMs,
       secs: Math.round(elapsedMs / 1000),
     });
@@ -131,6 +176,8 @@
   function attempt(result, ms, extra) {
     if (attempts >= 10) return;
     attempts += 1;
+    if (result === 'error') failed = true;
+    if (result === 'submitted') failed = false;
     extra = extra || {};
     send(REPORT_ENDPOINT, {
       t: 'attempt',

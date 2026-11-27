@@ -85,6 +85,7 @@ const Apply = () => {
   const phaseRef = useRef<Phase>("form");
   const [legal, setLegal] = useState<LegalKey | null>(null);
   const [announce, setAnnounce] = useState("");
+  const [submitError, setSubmitError] = useState("");
 
   const cardRef = useRef<HTMLDivElement>(null);
   const priorHeight = useRef(0);
@@ -318,6 +319,7 @@ const Apply = () => {
     setAnnounce("Submitting your application");
     const startedAt = Date.now();
     const { firstName, lastName } = splitName(d.legalName);
+    let submitFailed = false;
 
     try {
       await submitApplication({
@@ -339,16 +341,20 @@ const Apply = () => {
         campaign,
       });
     } catch (error) {
-      // Same behaviour as the page this replaces: carry on to the confirmation even if sending failed.
+      // Carry on to the confirmation so a nervous applicant is not bounced back into the form, but
+      // remember it: "Application received" over a failed POST is how leads vanish silently.
       console.error("submitApplication failed", error);
+      setSubmitError(error instanceof Error ? error.message : "Sending failed");
+      submitFailed = true;
     }
 
     await sleep(Math.max(0, MIN_BUSY_MS - (Date.now() - startedAt)));
-    clearDraft();
+    // Keep the draft on failure so reloading the page really does restore the answers.
+    if (!submitFailed) clearDraft();
     setPhaseBoth("sent");
     await sleep(reducedMotion() ? 150 : OVERLAY_MS);
     setPhaseBoth("done");
-    setAnnounce("Application received. We'll be in touch.");
+    setAnnounce(submitError ? "Application received, but sending failed" : "Application received. We'll be in touch.");
     window.scrollTo({ top: 0, behavior: "auto" });
     window.setTimeout(() => document.getElementById("stepTitle")?.focus({ preventScroll: true }), 60);
   };
@@ -528,6 +534,7 @@ const Apply = () => {
                   env={env}
                   waMessage={waMessage}
                   waHref={waHref}
+                  submitError={submitError}
                   onWhatsappTap={() =>
                     window.Tracking?.trackFormEvent(
                       "whatsapp_cta_tapped",

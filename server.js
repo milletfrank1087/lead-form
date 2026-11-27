@@ -332,9 +332,29 @@ app.post('/api/track/form-event', (req, res) => {
 app.post('/api/client/error', (req, res) => {
   const { visitor } = resolveVisitor(req);
   const issue = req.body || {};
-  const sig = `${issue.type || 'ERROR'}:${issue.message || ''}:${issue.line || 0}`;
-  JourneyLog.clientError(visitor.id, sig, `${issue.type || 'ERROR'}: ${issue.message || ''}`);
-  recordFunnelEvent(visitor, 'client_error', `${issue.type || 'ERROR'}: ${issue.message || ''}`);
+  // The page has always posted `kind`/`msg` while this handler read `type`/`message`, so every stored
+  // error was the literal string "ERROR: " and the dedup signature was always "ERROR::0". Accept both.
+  const kind = issue.type || issue.kind || 'ERROR';
+  const message = issue.message || issue.msg || '(empty message)';
+  const line = issue.line || 0;
+  const src = issue.src || '';
+  const stack = issue.stack || '';
+  const repeat = issue.repeat || 1;
+  const text =
+    `${kind}: ${message}` +
+    (src ? ` @ ${src}${line ? `:${line}` : ''}` : '') +
+    (repeat > 1 ? ` (x${repeat})` : '');
+  const sig = `${kind}:${message}:${src}:${line}`;
+  JourneyLog.clientError(visitor.id, sig, text);
+  recordFunnelEvent(visitor, 'client_error', text, {
+    kind,
+    src,
+    line,
+    stack,
+    repeat,
+    stage: issue.stage || null,
+    secs: issue.secs || null,
+  });
   res.json({ ok: true });
 });
 
@@ -414,35 +434,9 @@ async function handleCreateLead(req, res) {
     const ttp = tracking.ttp || req.cookies?._ttp || null;
     const ttclid = tracking.ttclid || null;
 
-    const capiStatus = await trackLead(
-      {
-        leadId,
-        visitorId: visitor.id,
-        firstName: String(firstName).trim(),
-        lastName: String(lastName).trim(),
-        email: String(email).trim().toLowerCase(),
-        phone: String(phone).trim(),
-        city: String(city).trim(),
-        state: String(state).trim(),
-        employed: String(employed).trim(),
-        creditScore: String(creditScore).trim(),
-        contactPref: String(contactPref).trim(),
-      },
-      {
-        eventId,
-        sourceUrl,
-        fbp,
-        fbc,
-        ttp,
-        ttclid,
-      },
-      clientInfo
-    );
-
-    const metaCapiOk = capiStatus?.meta === '✓';
-    const tiktokCapiOk = capiStatus?.tiktok === '✓';
-    const capiSent = metaCapiOk || tiktokCapiOk;
-
+    // Record the lead before spending a Meta Lead on it. CAPI used to run first, so a failure further
+    // down still handed Meta a conversion for an applicant nobody had saved. The CAPI status is patched
+    // onto the saved records once it returns.
     const nowIso = new Date().toISOString();
     const locationLabel =
       [visitor.city, visitor.region, visitor.country].filter(Boolean).join(', ') || 'Unknown';
@@ -493,16 +487,60 @@ async function handleCreateLead(req, res) {
       sourceUrl,
       eventId,
       leadEventId: eventId,
-      capiMeta: capiStatus?.meta || null,
-      capiTiktok: capiStatus?.tiktok || null,
-      capiSent,
-      metaCapiOk,
-      tiktokCapiOk,
+      capiMeta: null,
+      capiTiktok: null,
+      capiSent: false,
+      metaCapiOk: false,
+      tiktokCapiOk: false,
       timeToSubmitMs: typeof timeToSubmitMs === 'number' ? timeToSubmitMs : null,
       notes: '',
     });
 
     store.leads.unshift(leadRecord);
+    saveLocalLeads();
+    await upsertLeadInSupabase(leadRecord);
+
+    let capiStatus;
+    try {
+      capiStatus = await trackLead(
+        {
+          leadId,
+          visitorId: visitor.id,
+          firstName: String(firstName).trim(),
+          lastName: String(lastName).trim(),
+          email: String(email).trim().toLowerCase(),
+          phone: String(phone).trim(),
+          city: String(city).trim(),
+          state: String(state).trim(),
+          employed: String(employed).trim(),
+          creditScore: String(creditScore).trim(),
+          contactPref: String(contactPref).trim(),
+        },
+        {
+          eventId,
+          sourceUrl,
+          fbp,
+          fbc,
+          ttp,
+          ttclid,
+        },
+        clientInfo
+      );
+    } catch (err) {      // A CAPI failure must not cost the applicant: the lead is already saved.
+      console.error('[API /api/leads] CAPI failed but lead is saved:', err.message);
+      capiStatus = { meta: 'ERR', tiktok: 'ERR' };
+    }
+
+    const metaCapiOk = capiStatus?.meta === '✓';
+    const tiktokCapiOk = capiStatus?.tiktok === '✓';
+    const capiSent = metaCapiOk || tiktokCapiOk;
+
+    // Patch the result onto the record written before the call, here and in the database.
+    leadRecord.capiMeta = capiStatus?.meta || null;
+    leadRecord.capiTiktok = capiStatus?.tiktok || null;
+    leadRecord.capiSent = capiSent;
+    leadRecord.metaCapiOk = metaCapiOk;
+    leadRecord.tiktokCapiOk = tiktokCapiOk;
     saveLocalLeads();
     await upsertLeadInSupabase(leadRecord);
 

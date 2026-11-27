@@ -767,9 +767,11 @@ type DoneProps = {
   waHref: string;
   onWhatsappTap: () => void;
   onCopy: (ok: boolean) => void;
+  /** Set when the POST failed: the screen then says so instead of implying the lead is safely in. */
+  submitError?: string;
 };
 
-export function DoneScreen({ data, env, waMessage, waHref, onWhatsappTap, onCopy }: DoneProps) {
+export function DoneScreen({ data, env, waMessage, waHref, onWhatsappTap, onCopy, submitError }: DoneProps) {
   const first = splitName(data.legalName).firstName || "there";
   const isWa = data.contactPref === "whatsapp";
   const waAvailable = hasWhatsapp();
@@ -799,6 +801,12 @@ export function DoneScreen({ data, env, waMessage, waHref, onWhatsappTap, onCopy
         <i />
         Application received
       </div>
+      {submitError && (
+        <p className="err" style={{ justifyContent: "center", marginTop: 10 }}>
+          <IconAlert />
+          <span>Sending failed ({submitError}). Your details are saved on this device — reload to retry.</span>
+        </p>
+      )}
       <h2 className="h" id="stepTitle" tabIndex={-1}>
         Thanks, {first}.
       </h2>
