@@ -117,6 +117,10 @@ function recordFunnelEvent(visitor, eventType, details, extra = null, capiStatus
 }
 
 app.use(express.json({ limit: '1mb' }));
+// The beacon reporter posts JSON with `Content-Type: text/plain` (a text/plain body is a "simple
+// request", so it needs no preflight). express.json only decodes application/json, so without this the
+// whole body was silently dropped and every stored browser error read "ERROR: ".
+app.use(express.text({ type: ['text/plain', 'text/*'], limit: '64kb' }));
 app.use(cookieParser());
 
 // First-party _fbp cookie middleware for resilient CAPI deduplication
@@ -329,9 +333,25 @@ app.post('/api/track/form-event', (req, res) => {
   res.json({ success: true });
 });
 
+// The beacon reporter and the page both post with `Content-Type: text/plain`. With the text parser in
+// place the body reaches us as a raw string rather than an object, so decode it here before use.
+function beaconBody(req) {
+  const raw = req.body;
+  if (raw && typeof raw === 'object') return raw;
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (_) {
+      return {};
+    }
+  }
+  return {};
+}
+
 app.post('/api/client/error', (req, res) => {
   const { visitor } = resolveVisitor(req);
-  const issue = req.body || {};
+  const issue = beaconBody(req);
   // The page has always posted `kind`/`msg` while this handler read `type`/`message`, so every stored
   // error was the literal string "ERROR: " and the dedup signature was always "ERROR::0". Accept both.
   const kind = issue.type || issue.kind || 'ERROR';
@@ -360,7 +380,7 @@ app.post('/api/client/error', (req, res) => {
 
 app.post('/api/client/report', (req, res) => {
   const { visitor } = resolveVisitor(req);
-  const report = req.body || {};
+  const report = beaconBody(req);
   if (report.funnelStage) {
     JourneyLog.funnelExit(report.funnelStage);
   }
