@@ -5,13 +5,14 @@
  * These values reproduce the page this project was modelled on. If you are not that company, replace
  * them (and the logo) with your own before publishing anything.
  */
-/** The default, used when `VITE_WHATSAPP_NUMBER` is unset. This is the Cloud API number Maya sends from
- *  on the Stateside Partners WhatsApp Business account, "+1 555-422-7372" (`WHATSAPP_PHONE_NUMBER_ID`
- *  1232483556622841 in the onboarding app). It was switched here from the older "+1 (910) 474-0901"
- *  account on 2026-11-26, once the templates were approved and the webhook was connected, so a tap
- *  lands on the number the onboarding app actually answers on. The former defaults (19104740901 and,
- *  before it, 13183147693) are different chats - do not fall back to them. */
-const FALLBACK_WHATSAPP_NUMBER = "15554227372";
+/** The default, used when `VITE_WHATSAPP_NUMBER` is unset. This is the number the onboarding app SENDS
+ *  from on the Stateside Partners WhatsApp Business account, "+1 269-240-6135" (`WHATSAPP_PHONE_NUMBER_ID`
+ *  1403856056154617). It moved here from "+1 555-422-7372" on 2026-11-27: that number is still CONNECTED
+ *  and still receives, but a pending *rename* makes Meta refuse every send on it (131037), so a tap there
+ *  reached a number nothing could answer from. The app moved to this one and the form must point at the
+ *  same number, from one constant, or candidates land in a chat that never replies. Do not fall back to
+ *  any earlier default (15554227372, 19104740901, 13183147693): they are different chats. */
+const FALLBACK_WHATSAPP_NUMBER = "12692406135";
 
 /** `VITE_WHATSAPP_NUMBER` wins when it is a usable number (8+ digits); anything else falls back.
  *  Read through import.meta.env so Vite inlines it at build time (the page is a static SPA). */
@@ -46,6 +47,11 @@ export const brand = {
    * the candidate's message lands somewhere Maya never reads, and the 24-hour reply window opens on a
    * number she does not use. Override it per deploy with `VITE_WHATSAPP_NUMBER` rather than editing
    * this file, so the deployed number can be checked against Meta's dashboard without a release.
+   *
+   * A SECOND number on the same account still receives (that is how the 555 number above stranded
+   * people), so `WHATSAPP_PHONE_NUMBER_ID` and this value are two separate settings that must agree.
+   * The onboarding app's inbound filter accepts any number on its WhatsApp Business Account, so a
+   * person who reaches the other one is still answered - from the number they wrote to.
    */
   whatsappNumber: readWhatsappNumber(),
 } as const;
